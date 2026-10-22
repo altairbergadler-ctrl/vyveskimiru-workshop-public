@@ -1,0 +1,13 @@
+#!/usr/bin/python3
+import argparse, base64, json, subprocess, pathlib
+p = argparse.ArgumentParser()
+p.add_argument('action', choices=['begin','scan','mail','orders','ack','pending','guard','finish'])
+p.add_argument('--run-id', required=True)
+for key in ['key','revision','outcome','note']:
+    p.add_argument('--'+key, default='')
+p.add_argument('--offset', type=int, default=0)
+a = vars(p.parse_args()); a['runId'] = a.pop('run_id')
+encoded = base64.b64encode(json.dumps(a, ensure_ascii=False).encode()).decode()
+source = pathlib.Path('/opt/workshop-mail-runner/mail-delta.mjs').read_bytes()
+r = subprocess.run(['sudo','-n','/usr/local/libexec/workshop-mail-container', encoded], input=source)
+raise SystemExit(r.returncode)

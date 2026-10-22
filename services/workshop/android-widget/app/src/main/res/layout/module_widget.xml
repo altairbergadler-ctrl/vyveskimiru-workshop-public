@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/module_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_surface"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="4dp">
+    <ImageView
+        android:id="@+id/module_icon"
+        android:layout_width="38dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/module_icon_background"
+        android:contentDescription="@null"
+        android:padding="9dp"
+        android:src="@drawable/ic_dashboard"
+        android:tint="@color/ivory" />
+    <TextView
+        android:id="@+id/module_title"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:fontFamily="serif"
+        android:gravity="center_vertical"
+        android:maxLines="1"
+        android:text="@string/module_finance"
+        android:textColor="@color/ink"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+</LinearLayout>

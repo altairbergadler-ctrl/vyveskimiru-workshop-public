@@ -1,0 +1,13 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Local assembly tools and reports are ignored by Git"
+paths = ['(^|/)\.assembly/']
+
+[[allowlists]]
+description = "categories-v1 is a public migration marker, not a credential"
+condition = "AND"
+paths = ['services/workshop/server/(index\.mjs|auto-services\.test\.mjs)$']
+regexTarget = "line"
+regexes = ["bootstrapKey:\\s*'categories-v1'"]

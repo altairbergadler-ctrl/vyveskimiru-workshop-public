@@ -1,0 +1,19 @@
+# Allowlist: photos, history, credentials and local environment never enter a build.
+**
+!Dockerfile
+!requirements.txt
+!assets/
+!assets/**
+!scripts/
+!scripts/**
+!tests/
+!tests/**
+!deploy/
+!deploy/healthcheck.py
+!deploy/check-runtime.py
+**/__pycache__
+**/*.pyc
+**/*.ps1
+**/auth.json
+**/.codex
+**/.env

@@ -1,0 +1,14 @@
+[Unit]
+Description=Verified encrypted VPS archives to Google Drive
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/lib/vps-drive/vps_drive.py
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+TimeoutStartSec=6h

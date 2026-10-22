@@ -1,0 +1,59 @@
+{
+  "objects": [
+    {
+      "id": "title",
+      "type": "text",
+      "text": "АБВ\nгд",
+      "font_family": "Arial",
+      "font_bold": true,
+      "letter_height_cm": 20,
+      "line_gap_cm": 4,
+      "text_align": "right",
+      "front_color": "#ffeeaa",
+      "x_cm": 10,
+      "y_cm": 5,
+      "rotation_deg": 0,
+      "preview_line_metrics": {
+        "font_size_px": 100,
+        "font_family": "Arial",
+        "font_weight": 700,
+        "lines": [
+          {
+            "text": "АБВ",
+            "font_family": "Arial",
+            "font_weight": 700,
+            "width": 150,
+            "actualBoundingBoxAscent": 70,
+            "actualBoundingBoxDescent": 10,
+            "actualBoundingBoxLeft": 3,
+            "actualBoundingBoxRight": 147
+          },
+          {
+            "text": "гд",
+            "font_family": "Arial",
+            "font_weight": 700,
+            "width": 100,
+            "actualBoundingBoxAscent": 70,
+            "actualBoundingBoxDescent": 10,
+            "actualBoundingBoxLeft": 3,
+            "actualBoundingBoxRight": 97
+          }
+        ]
+      },
+      "artwork": {
+        "name": "text-title.png",
+        "mime_type": "image/png",
+        "source": "text",
+        "data_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAADaIAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeyJ3aWR0aCI6MzQ5MCwiaGVpZ2h0Ijo0MDk2LCJmb250IjoiNzAwIDEwMHB4IFwiQXJpYWxcIiwgQXJpYWwsIHNhbnMtc2VyaWYiLCJ0ZXh0IjpbeyJ0ZXh0Ijoi0JDQkdCSIiwieCI6MywieSI6NzAsImZvbnQiOiI3MDAgMTAwcHggXCJBcmlhbFwiLCBBcmlhbCwgc2Fucy1zZXJpZiJ9LHsidGV4dCI6ItCz0LQiLCJ4Ijo1MywieSI6MTY2LCJmb250IjoiNzAwIDEwMHB4IFwiQXJpYWxcIiwgQXJpYWwsIHNhbnMtc2VyaWYifV0sInRyYW5zZm9ybSI6WzIzLjI2NjY2NjY2NjY2NjY2NiwwLDAsMjMuMjcyNzI3MjcyNzI3MjczLDAsMF19",
+        "width_px": 3490,
+        "height_px": 4096,
+        "font_family_requested": "Arial",
+        "font_family_rendered": "Arial",
+        "font_fallback": false,
+        "glyph_fallback": "browser_font_stack"
+      },
+      "artwork_signature": "[\"[\\\"АБВ\\\\nгд\\\",\\\"Arial\\\",true,20,4,\\\"right\\\",\\\"#ffeeaa\\\"]\",{\"font_size_px\":100,\"font_family\":\"Arial\",\"font_weight\":700,\"lines\":[{\"text\":\"АБВ\",\"font_family\":\"Arial\",\"font_weight\":700,\"width\":150,\"actualBoundingBoxAscent\":70,\"actualBoundingBoxDescent\":10,\"actualBoundingBoxLeft\":3,\"actualBoundingBoxRight\":147},{\"text\":\"гд\",\"font_family\":\"Arial\",\"font_weight\":700,\"width\":100,\"actualBoundingBoxAscent\":70,\"actualBoundingBoxDescent\":10,\"actualBoundingBoxLeft\":3,\"actualBoundingBoxRight\":97}]}]"
+    }
+  ],
+  "composition_mode": "independent_objects_v1"
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Примерка на стене · ВывескиМиру</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/gallery.css">
+  <link rel="stylesheet" href="assets/tryon.css">
+  <script src="assets/tryon.js" type="module"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" id="back-link" href="./"><span class="brand-mark">ВМ</span><span>ВывескиМиру<small>← К выбранному шрифту</small></span></a><span class="beta">Примерка · тест</span></header>
+  <main class="tryon-main">
+    <div class="tryon-heading"><div><p class="eyebrow">ВАША ВЫВЕСКА В ВАШЕМ ПРОСТРАНСТВЕ</p><h1>Примерьте на стену</h1><p id="selection-summary" class="selection-summary">Загружаем выбранный вариант…</p></div></div>
+    <nav class="mode-tabs" aria-label="Режим примерки"><button id="tab-ar" type="button" aria-pressed="false" aria-controls="ar-panel">AR через камеру</button><button id="tab-photo" type="button" aria-pressed="false" aria-controls="photo-panel">По фотографии</button></nav>
+    <p id="fatal-error" class="tryon-error" role="alert" hidden></p>
+    <section id="ar-panel" class="tryon-panel" aria-label="AR через камеру" hidden>
+      <div class="tryon-stage ar-stage">
+        <model-viewer id="ar-viewer" ar ar-modes="webxr quick-look" ar-placement="wall" ar-scale="fixed" interaction-prompt="none" camera-controls touch-action="pan-y" shadow-intensity="0.6" exposure="1" camera-orbit="0deg 90deg auto" alt="Объёмная надпись выбранным шрифтом">
+          <button slot="ar-button" id="ar-launch" class="primary-button ar-launch" type="button">Примерить на стене</button>
+          <div slot="ar-prompt" class="ar-prompt">Медленно поводите камерой вдоль стены</div>
+        </model-viewer>
+        <p class="stage-badge">Объёмные буквы · 3D</p>
+      </div>
+      <div class="tryon-side"><p class="eyebrow">01 / AR-ПРИМЕРКА</p><h2>Посмотрите в своём пространстве</h2><p id="ar-status" role="status" aria-live="polite">Подготавливаем объёмные буквы…</p><p id="ar-dimensions" class="dimensions"></p><ol><li>Откройте эту страницу на телефоне.</li><li>Нажмите «Примерить на стене» и разрешите доступ к камере.</li><li>Медленно наведите камеру на стену и разместите надпись.</li></ol><p class="tryon-note">Размер зафиксирован по выбранной высоте «Н». Точность зависит от телефона и отслеживания стены. Цвет, металл и свет показаны условно; контражур в этой версии AR не воспроизводится.</p><button id="ar-retry" class="quiet-button" type="button" hidden>Повторить подготовку</button><button id="ar-to-photo" class="quiet-button" type="button">Примерить по фотографии</button><p class="tryon-note">Android: совместимый Chrome и сервисы Google AR. iPhone: Safari и встроенный AR Quick Look. Для смены шрифта вернитесь в каталог.</p></div>
+    </section>
+    <section id="photo-panel" class="tryon-panel" aria-label="Примерка по фотографии" hidden>
+      <div class="tryon-stage photo-stage"><canvas id="photo-canvas" width="1200" height="800" tabindex="0" role="img" aria-label="Примерка надписи на фото. Перетащите надпись или её углы. Стрелки на клавиатуре перемещают надпись."></canvas><div id="photo-empty"><span class="empty-icon" aria-hidden="true">▧</span><h2>Ваша стена — лучший фон</h2><p>Выберите фотографию фасада или сделайте снимок на телефон</p><button id="empty-upload" class="primary-button" type="button">Выбрать фото</button></div></div>
+      <div class="tryon-side"><p class="eyebrow">02 / ПРИМЕРКА ПО ФОТО</p><h2>Найдите подходящее место</h2><div class="photo-upload-actions"><button id="photo-upload" class="primary-button" type="button">Выбрать фото</button><button id="photo-camera" class="quiet-button" type="button">Сделать снимок</button></div><input id="photo-file" type="file" accept="image/*" hidden><input id="camera-file" type="file" accept="image/*" capture="environment" hidden><p id="photo-status" role="status" aria-live="polite">Фотография обрабатывается на вашем устройстве и не отправляется на сервер.</p><fieldset id="photo-controls" disabled><legend class="sr-only">Размещение надписи</legend><label for="photo-scale">Размер на фото <output id="scale-value">100%</output></label><input id="photo-scale" type="range" min="20" max="200" value="100"><label for="photo-rotation">Поворот <output id="rotation-value">0°</output></label><input id="photo-rotation" type="range" min="-45" max="45" value="0"><p class="tryon-note">Перетаскивайте надпись. Потяните за любой из четырёх углов, чтобы совместить её с перспективой стены. Стрелки на клавиатуре тоже перемещают надпись.</p><div class="photo-bottom-actions"><button id="photo-reset" class="quiet-button" type="button">Сбросить положение</button><button id="photo-save" class="primary-button" type="button">Скачать примерку</button></div></fieldset><p class="tryon-note">Масштаб на фотографии подбирается вручную. Указанные в каталоге сантиметры не определяют размер стены на снимке. Это визуальная примерка, не замер.</p></div>
+    </section>
+    <p class="tryon-footer">Тестовые режимы · окончательные размеры и изготовление согласовываем по макету. <a href="assets/tryon-licenses.txt" target="_blank" rel="noopener">Лицензии компонентов</a></p>
+  </main>
+</body>
+</html>

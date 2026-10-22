@@ -1,0 +1,22 @@
+# SNIPPET: add inside the existing vm-app HTTPS site block.
+# Do not replace its hostname, certificates, other routes, or global settings.
+# App .env: APP_BASE_PATH=/tools/stamp and COOKIE_SECURE=true.
+# Existing fallback routing must not consume /tools/stamp/* before this block.
+redir /tools/stamp /tools/stamp/ 308
+handle_path /tools/stamp/* {
+    request_body {
+        max_size 30MB
+    }
+    reverse_proxy 127.0.0.1:8187 {
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 90s
+        }
+    }
+}
+
+# handle_path strips /tools/stamp before forwarding. FastAPI root_path is set
+# by APP_BASE_PATH; do not add a second --root-path argument to Uvicorn.
+# This upstream assumes Caddy runs on the HOST. If Caddy is containerized,
+# inspect its Docker network first; 127.0.0.1 inside it is not the host.
+# Validate the entire existing Caddy config and reload it in its normal manner.

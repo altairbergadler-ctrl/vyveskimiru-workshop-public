@@ -1,0 +1,11 @@
+[Unit]
+Description=Discover new VPS backups every 15 minutes
+
+[Timer]
+OnCalendar=*-*-* *:00/15:00
+RandomizedDelaySec=60
+Persistent=true
+Unit=vps-drive.service
+
+[Install]
+WantedBy=timers.target

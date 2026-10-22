@@ -1,0 +1,18 @@
+# Loaded only after release-common.sh validates the owned /opt/workshop-qa/run-* root.
+services:
+  finance-pwa:
+    restart: 'no'
+    environment:
+      GOOGLE_CREDENTIALS_FILE: ''
+      GOOGLE_SPREADSHEET_ID: offline-workshop
+      DATA_DIR: ${WORKSHOP_QA_ROOT}/installation/shared/data
+      QA_DIRECTORY: ${WORKSHOP_QA_ROOT}/installation/shared
+      NODE_OPTIONS: --import=/app/qa/offline-preload.mjs
+      COOKIE_SECURE: 'false'
+      PRODUCTION_V2: ''
+    volumes:
+      - ${WORKSHOP_QA_ROOT}:${WORKSHOP_QA_ROOT}
+    network_mode: none
+    ports: !reset []
+    healthcheck:
+      test: ["CMD-SHELL", "NODE_OPTIONS= node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>r.json()).then(v=>{if(v.status!=='ok')process.exit(1)}).catch(()=>process.exit(1))\""]

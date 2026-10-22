@@ -1,0 +1,29 @@
+name: finance-pwa
+
+services:
+  finance-pwa:
+    build:
+      context: .
+      target: ${WORKSHOP_BUILD_TARGET:-production}
+    image: finance-pwa:${APP_VERSION:-local}
+    container_name: ${WORKSHOP_CONTAINER:-finance-pwa}
+    restart: unless-stopped
+    env_file:
+      - ${WORKSHOP_BASE:-/opt/finance-pwa}/shared/app.env
+    environment:
+      APP_VERSION: ${APP_VERSION:-local}
+      PRODUCTION_V2: google
+      DATA_DIR: /data
+      GOOGLE_CREDENTIALS_FILE: /run/secrets/google-service-account.json
+    ports:
+      - "127.0.0.1:${WORKSHOP_PORT:-18100}:3000"
+    volumes:
+      - ${WORKSHOP_BASE:-/opt/finance-pwa}/shared/data:/data
+      - ${WORKSHOP_BASE:-/opt/finance-pwa}/shared/google-service-account.json:/run/secrets/google-service-account.json:ro
+      - ${WORKSHOP_BASE:-/opt/finance-pwa}/shared/secrets:/run/secrets/workshop:ro
+      - /run/workshop-codex:/run/workshop-codex:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true

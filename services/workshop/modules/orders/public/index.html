@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f5f0">
+    <meta name="color-scheme" content="light">
+    <title>Заказы · Мастерская</title>
+    <link rel="icon" href="/kanban/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/kanban/styles.css?v=1">
+    <script type="module" src="/kanban/app.js?v=1"></script>
+  <link rel="stylesheet" href="/kanban/order-configurator.css?v=1"><link rel="stylesheet" href="/kanban/client-search.css?v=1">
+  </head>
+  <body>
+    <div id="boot" class="boot" role="status"><span class="spinner"></span>Открываем мастерскую…</div>
+
+    <section id="login" class="login-screen" hidden aria-labelledby="login-title">
+      <div class="login-card">
+        <div class="brand-mark brand-mark-large" data-icon="factory" aria-hidden="true"></div>
+        <p class="eyebrow">МАСТЕРСКАЯ</p>
+        <h1 id="login-title">Все заказы.<br>В одном месте.</h1>
+        <p class="login-description">Введите PIN, чтобы открыть доску заказов.</p>
+        <form id="login-form">
+          <label for="pin">PIN-код</label>
+          <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" required aria-describedby="login-error" placeholder="Введите PIN">
+          <p id="login-error" class="form-error" role="alert"></p>
+          <button id="login-button" class="button button-primary" type="submit">Открыть доску <span aria-hidden="true">↗</span></button>
+        </form>
+        <div class="login-footnote"><span class="status-dot dot-green"></span>Рабочее пространство заказов</div>
+      </div>
+      <div class="login-decoration" aria-hidden="true"><div></div><div></div><div></div></div>
+    </section>
+
+    <div id="app" class="app-shell" hidden>
+      <aside class="sidebar" aria-label="Рабочее пространство">
+        <div class="sidebar-top"><div class="brand"><div class="brand-mark" data-icon="factory" aria-hidden="true"></div><div class="brand-copy"><strong>Мастерская</strong><span>Наружная реклама</span></div></div><button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Раскрыть меню" aria-expanded="false" aria-controls="sidebar-navigation" title="Раскрыть меню"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3zM9 4v16m4-11 3 3-3 3"></path></svg></button></div>
+        <nav id="sidebar-navigation" class="sidebar-navigation" aria-label="Разделы">
+          <a id="dashboard-link" class="nav-item nav-compact" href="/" aria-label="Дашборд" title="Дашборд"><span data-icon="dashboard"></span><span class="nav-label">Дашборд</span></a>
+          <a class="nav-item nav-compact" href="/#analytics" aria-label="Аналитика" title="Аналитика"><span data-icon="dashboard"></span><span class="nav-label">Аналитика</span></a>
+          <a id="production-link" class="nav-item" href="/#production" aria-label="Производство" title="Производство"><span data-icon="factory"></span><span class="nav-label">Производство</span></a>
+          <a id="warehouse-link" class="nav-item" href="/#warehouse" aria-label="Склад" title="Склад"><span data-icon="boxes"></span><span class="nav-label">Склад</span></a>
+          <a id="orders-nav" class="nav-item nav-compact active" href="/kanban/" aria-current="page" aria-label="Заказы" title="Заказы"><span data-icon="columns"></span><span class="nav-label">Заказы</span><span id="nav-count" class="nav-count">—</span></a>
+          <button id="tools-toggle" class="nav-item nav-compact" type="button" popovertarget="tools-popover" aria-label="Инструменты" title="Инструменты" aria-haspopup="menu" aria-controls="tools-popover" aria-expanded="false"><span data-icon="tool"></span><span class="nav-label">Инструменты</span></button>
+          <div id="tools-popover" class="tools-popover" popover="auto" role="menu" aria-label="Инструменты">
+            <a class="tools-menu-link" href="/signs/" target="_blank" rel="noopener noreferrer" role="menuitem"><span data-icon="image"></span>Визуализация</a>
+            <a class="tools-menu-link" href="/tools/stamp/" target="_blank" rel="noopener noreferrer" role="menuitem"><span data-icon="stamp"></span>Оттиск</a>
+            <a class="tools-menu-link" href="/calculator/" target="_blank" rel="noopener noreferrer" role="menuitem"><span data-icon="calculator"></span>Калькулятор вывесок</a>
+            <a class="tools-menu-link" href="/fonts/" target="_blank" rel="noopener noreferrer" role="menuitem"><span data-icon="scan"></span>Примерка вывески</a>
+          </div>
+        </nav>
+        <div class="sidebar-bottom"><button id="logout" class="logout-button" type="button" aria-label="Выйти" title="Выйти"><span data-icon="log-out"></span><span>Выйти</span></button></div>
+      </aside>
+
+      <main class="workspace">
+        <header class="page-header">
+          <h1>Заказы</h1>
+          <section id="stats" class="stats" aria-label="Сводка заказов"></section>
+          <div class="header-actions"><div class="header-buttons"><button id="create-order" class="button button-primary create-order-button" type="button" aria-label="Создать заказ"><span data-icon="plus"></span><span class="create-order-full">Создать заказ</span><span class="create-order-short" aria-hidden="true">Заказ</span></button><a id="sheet-link" class="button button-outline sheet-link" target="_blank" rel="noopener noreferrer" aria-label="Открыть таблицу" title="Открыть таблицу" hidden><span data-icon="table"></span><span>Таблица</span><span data-icon="arrow-up-right"></span></a></div><div class="sync-status"><span id="sync-dot" class="status-dot dot-muted"></span><span id="sync-status" role="status">Подключаемся…</span></div></div>
+        </header>
+
+        <section class="board-section" aria-label="Доска заказов">
+          <div id="board-toolbar" class="board-toolbar">
+            <div class="view-label"><span data-icon="columns"></span>Доска<span id="visible-count" class="subtle-count"></span></div>
+            <div class="filters"><label class="search-field"><span data-icon="search"></span><input id="search" type="search" placeholder="Поиск по заказам…" aria-label="Поиск по заказам, клиентам и позициям" autocomplete="off"><kbd aria-hidden="true">/</kbd></label><label class="manager-field"><span data-icon="user"></span><select id="manager" aria-label="Фильтр по менеджеру"><option value="">Все менеджеры</option></select></label><button id="refresh" class="icon-button" type="button" aria-label="Обновить данные" title="Обновить данные"><span data-icon="refresh"></span></button></div>
+          </div>
+          <div id="notices" class="notices" aria-live="polite" hidden></div>
+          <div id="board-error" class="board-error" role="alert" hidden></div>
+          <div id="board-loading" class="board-loading" role="status"><span class="spinner"></span><strong>Собираем заказы</strong><span>Загружаем актуальные данные из таблицы</span></div>
+          <div class="work-area">
+            <div class="production-area">
+              <div id="board" class="board" aria-label="Столбцы статусов заказов" tabindex="0" hidden></div>
+              <section id="installation-section" class="installation-section is-empty" aria-labelledby="installation-heading"><div class="installation-lane-header"><h2 id="installation-heading"><span data-icon="tool"></span>Монтажи<span id="installation-count" class="subtle-count">0</span></h2><span class="installation-lane-hint">Согласованные выезды</span></div><div id="installation-lane" class="installation-lane" aria-label="Монтажи заказов" tabindex="0"></div></section>
+            </div>
+            <div class="finished-rail">
+              <button id="cancelled" class="cancelled-zone" type="button" aria-label="Отменённые заказы" aria-haspopup="dialog"></button>
+              <aside id="archive" class="archive-rail" aria-label="Архив заказов" tabindex="0"></aside>
+            </div>
+          </div>
+          <div class="board-footer"><span><span class="desktop-hint">Перетащите карточку, чтобы изменить статус</span><span class="mobile-hint">Нажмите на заказ, чтобы открыть детали</span></span><span id="board-footer-count">—</span></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="order-dialog" class="order-dialog" aria-labelledby="order-dialog-title"></dialog>
+    <dialog id="cancelled-dialog" class="cancelled-dialog" aria-labelledby="cancelled-title"></dialog>
+    <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>

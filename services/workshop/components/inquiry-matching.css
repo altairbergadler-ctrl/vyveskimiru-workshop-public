@@ -1,0 +1,245 @@
+.im-root {
+  min-width: 0;
+}
+.im-toolbar,
+.im-line {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.im-toolbar {
+  margin: 16px 0;
+}
+.im-toolbar label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #59685f;
+}
+.im-toolbar input,
+.im-toolbar select {
+  min-height: 42px;
+  padding: 9px 12px;
+  background: #fff;
+  border: 1px solid #d9e1da;
+  border-radius: 10px;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 13px;
+}
+.im-toolbar input {
+  flex: 1;
+  min-width: 160px;
+}
+.im-help {
+  font-size: 12px;
+  color: #68776f;
+  line-height: 1.65;
+}
+.im-warning {
+  padding: 12px 16px;
+  background: #fff5e4;
+  border: 1px solid #ecdec2;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #775920;
+}
+.im-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.im-kpis article {
+  border: 1px solid #dce4de;
+  border-radius: 12px;
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+.im-kpis article > span {
+  font-size: 12px;
+  color: #52655b;
+}
+.im-kpis strong {
+  font-size: 25px;
+  overflow-wrap: anywhere;
+}
+.im-kpis small {
+  font-size: 11px;
+  color: #6d7c73;
+  line-height: 1.5;
+}
+.im-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #dce4de;
+  padding-bottom: 8px;
+  margin: 20px 0;
+}
+.im-tabs button {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.im-tabs [aria-current] {
+  background: #e9f1eb;
+  font-weight: 600;
+  color: #285943;
+}
+.im-table-wrap {
+  overflow: auto;
+  border: 1px solid #dce4de;
+  border-radius: 12px;
+  margin: 16px 0;
+  max-width: 100%;
+}
+.im-table {
+  width: 100%;
+  min-width: 830px;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+.im-table th,
+.im-table td {
+  padding: 13px;
+  text-align: left;
+  border-bottom: 1px solid #e4e9e5;
+  vertical-align: top;
+}
+.im-table th {
+  background: #f4f6f2;
+  font-size: 11px;
+  color: #617468;
+}
+.im-table td:first-child {
+  min-width: 215px;
+  max-width: 320px;
+}
+.im-table small {
+  display: block;
+  margin-top: 6px;
+  color: #7a867e;
+  font-size: 11px;
+}
+.im-detail {
+  background: #f7f9f5;
+  border: 1px solid #dce4de;
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 20px;
+}
+.im-detail h3,
+.im-root h3 {
+  font-size: 16px;
+  margin: 14px 0;
+}
+.im-candidate,
+.im-dialog {
+  padding: 18px;
+  border: 1px solid #dce4de;
+  border-radius: 12px;
+  margin: 12px 0;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+.im-candidate ul,
+.im-root ul {
+  padding-left: 20px;
+  list-style: disc;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 12px 0;
+}
+.im-candidate p,
+.im-dialog p {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 8px 0;
+}
+.im-candidate small,
+.im-dialog small {
+  font-size: 11px;
+  color: #6d7b72;
+}
+.im-badge {
+  font-size: 11px;
+  background: #f6eddb;
+  color: #806c35;
+  padding: 6px 9px;
+  border-radius: 8px;
+}
+.im-strong .im-badge {
+  background: #e7efe9;
+  color: #35634c;
+}
+.im-progress {
+  display: grid;
+  gap: 8px;
+  padding: 15px;
+  border-radius: 10px;
+  background: #edf4ee;
+  font-size: 13px;
+  margin: 12px 0;
+}
+.im-progress progress {
+  width: 100%;
+  height: 8px;
+  accent-color: #648e47;
+}
+.im-job {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #e4e9e5;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+@media (max-width: 700px) {
+  .im-root > .an-panel-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .im-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .im-kpis article {
+    padding: 12px;
+  }
+  .im-kpis strong {
+    font-size: 21px;
+  }
+  .im-toolbar {
+    align-items: stretch;
+  }
+  .im-toolbar label,
+  .im-toolbar input,
+  .im-toolbar select {
+    width: 100%;
+  }
+  .im-toolbar > button {
+    width: 100%;
+  }
+  .im-detail {
+    padding: 12px;
+  }
+  .im-candidate,
+  .im-dialog {
+    padding: 12px;
+  }
+  .im-badge {
+    max-width: 100%;
+  }
+  .im-tabs button {
+    font-size: 12px;
+    padding: 9px;
+  }
+  .im-root .im-line {
+    min-width: 0;
+  }
+}

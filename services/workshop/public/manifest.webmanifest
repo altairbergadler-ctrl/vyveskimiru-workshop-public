@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Финансы · Наружная реклама",
+  "short_name": "Финансы",
+  "description": "Доходы, расходы и денежный поток рекламного производства.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8f6f0",
+  "theme_color": "#171b18",
+  "lang": "ru",
+  "categories": ["business", "finance"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/icon-192-v3.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512-v3.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512-v3.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

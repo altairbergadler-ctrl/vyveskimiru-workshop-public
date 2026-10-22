@@ -1,0 +1,18 @@
+* text=auto eol=lf
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.jar binary
+*.bat text eol=crlf
+*.cmd text eol=crlf
+# Preserve imported third-party licence text and generated bundles verbatim.
+apps/fonts/dist/assets/ar.bundle.js -whitespace
+apps/fonts/dist/assets/licenses/** -whitespace
+apps/fonts/source-fonts/** -whitespace
+services/signage/assets/fonts/*.txt -whitespace
+ops/mail-runner/workshop-mail.service -whitespace
+ops/systemd/workshop-mail.service -whitespace

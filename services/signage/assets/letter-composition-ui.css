@@ -1,0 +1,56 @@
+/* Independent text and supplied-artwork objects. */
+html[data-letter-objects=true] #globalTextField,html[data-letter-objects=true] #textHint,html[data-letter-objects=true] #interfaceTextLayout,html[data-letter-objects=true] #interfaceFontField,html[data-letter-objects=true] #productFontBoldLabel,html[data-letter-objects=true] #globalFrontColorField,html[data-letter-objects=true] #interfaceProductionToggle,html[data-letter-objects=true] #lettersFields{display:none!important}
+#letterComposition{margin:0 0 18px;padding:14px 12px;border:1px solid #c8dcd3;border-radius:11px;background:#f5faf7;min-width:0}
+#letterComposition h3{font-size:14px;line-height:1.35;margin:0;color:var(--ink)}
+#letterComposition .letter-composition-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+#letterObjectCount{font-size:10px;font-weight:600;white-space:nowrap;color:#006e60;background:#e1f1e8;padding:3px 7px;border-radius:99px}
+#letterComposition>.hint{margin:0 0 11px;font-size:11px;line-height:1.5}
+#letterComposition button{font-size:11px;padding:7px 9px;min-height:35px;border-radius:8px}
+#letterComposition .letter-add-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+#letterComposition .letter-add-actions button{background:#006e60;color:#fff;border-color:#006e60;font-weight:600;font-size:12px;min-height:39px;padding:7px 5px}
+#letterComposition .letter-add-actions button:hover{background:#005c51}
+#letterComposition .letter-object-list{display:grid;gap:6px}
+#letterComposition .letter-object-choice{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border-color:#d7e3dc;background:#fff;min-width:0;padding:8px}
+#letterComposition .letter-object-choice[aria-pressed=true]{border-color:#008671;background:#e5f3ec;box-shadow:inset 3px 0 #008671}
+#letterComposition .letter-object-icon{width:31px;height:31px;flex:none;display:grid;place-items:center;border:1px solid #d7e3dc;border-radius:5px;background:#f6faf8;color:#006e60;font-size:18px;font-family:Georgia,serif;font-weight:700}
+#letterComposition .letter-object-icon img{max-width:100%;max-height:100%;object-fit:contain}
+#letterComposition .letter-object-caption{display:grid;min-width:0;gap:1px}
+#letterComposition .letter-object-caption b{font-size:11px;color:var(--ink);line-height:1.35}
+#letterComposition .letter-object-caption small{font-size:10px;line-height:1.35;color:#62767a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+#letterComposition .letter-object-settings{margin-top:12px;padding:11px;border:1px solid #d7e3dc;border-radius:9px;background:#fff;min-width:0}
+#letterComposition .letter-selected-heading{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:10px}
+#letterComposition .letter-selected-heading b{font-size:12px;color:#006e60}
+#letterComposition .letter-selected-heading .letter-remove{min-height:28px;padding:3px 6px;font-size:10px;color:#875648;background:#fffaf8;border-color:#e7d4ca}
+#letterComposition .field{font-size:11px;margin-bottom:8px}
+#letterComposition input:not([type=checkbox]),#letterComposition textarea,#letterComposition select{min-height:36px;padding:7px 8px;margin-top:4px;font-size:12px;background:#fafcfb}
+#letterComposition textarea{min-height:78px;line-height:1.45}
+#letterComposition input:invalid{border-color:#c77752}
+#letterComposition .letter-object-font-row{display:grid;grid-template-columns:87px minmax(0,1fr);gap:8px}
+#letterComposition .letter-object-color-row{display:grid;grid-template-columns:minmax(0,1fr) 72px;gap:8px;align-items:center}
+#letterComposition .letter-object-color-row input[type=color]{min-height:30px;height:30px;padding:3px}
+#letterComposition .check{font-size:11px;line-height:1.3;align-items:center;gap:5px}
+#letterComposition .check input{margin:0;accent-color:#006e60}
+#letterComposition .row{gap:8px}
+#letterComposition .hint{font-size:10px;line-height:1.5;margin:5px 0 9px}
+#letterComposition .letter-text-hint{margin:-2px 0 10px}
+#letterComposition .letter-font-hint{padding-bottom:10px;border-bottom:1px solid #e3ece7}
+#letterComposition .letter-object-position{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}
+#letterComposition .letter-position-hint{margin-bottom:6px}
+#letterComposition .letter-object-size{display:block;font-size:11px;color:#006e60;font-variant-numeric:tabular-nums}
+#letterComposition .letter-logo-summary{display:flex;align-items:center;gap:9px;margin:3px 0 10px;min-width:0}
+#letterComposition .letter-logo-summary span{font-size:11px;line-height:1.45;overflow-wrap:anywhere;color:#53666a;min-width:0}
+#letterComposition .letter-logo-thumbnail{width:54px;height:54px;flex-shrink:0;border:1px solid #d0ded6;border-radius:7px;object-fit:contain;padding:5px;background-color:#fff;background-image:linear-gradient(45deg,#e9eeeb 25%,transparent 25%),linear-gradient(-45deg,#e9eeeb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e9eeeb 75%),linear-gradient(-45deg,transparent 75%,#e9eeeb 75%);background-size:12px 12px;background-position:0 0,0 6px,6px -6px,-6px 0}
+#letterComposition .letter-logo-summary span{overflow-wrap:anywhere}
+#letterComposition .letter-empty-objects{padding:5px 0;color:#67787c;font-size:11px;margin:0}
+#letterComposition .letter-object-status{font-size:11px;line-height:1.45;color:#53666a;margin:0 0 8px;overflow-wrap:anywhere}
+#letterComposition .letter-object-status:empty{display:none}
+#letterComposition .letter-object-status.letter-error{color:#925032}
+@media(max-width:720px){#letterComposition .letter-object-font-row{grid-template-columns:100px minmax(0,1fr)}#letterComposition .letter-add-actions button{font-size:13px}#letterComposition .letter-object-caption b{font-size:12px}}
+#letterComposition .letter-object-materials{margin-top:11px;border-top:1px solid #e3ece7;padding-top:9px}
+#letterComposition .letter-object-materials summary{font-size:11px;color:#53666a;font-weight:600;cursor:pointer}
+#letterComposition .letter-object-materials[open] summary{margin-bottom:9px}
+#letterComposition .letter-object-materials input[type=color]{min-height:36px;height:36px;padding:3px}
+
+html[data-independent-signs="true"] #compositionSizeFields,html[data-independent-signs="true"] #compositionRotationField,html[data-independent-signs="true"] #interfaceSizeHint,html[data-independent-signs="true"] #place,html[data-independent-signs="true"] #placementHint{display:none!important}
+#independentPlacementHint{display:none}
+html[data-independent-signs="true"] #independentPlacementHint{display:block}

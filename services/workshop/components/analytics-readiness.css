@@ -1,0 +1,124 @@
+.ar-readiness {
+  margin: 16px 0;
+  padding: 16px;
+}
+.ar-readiness summary,
+.ar-materials summary {
+  cursor: pointer;
+  font-weight: 650;
+  min-height: 40px;
+  align-content: center;
+}
+.ar-readiness p,
+.ar-materials p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--al-muted);
+}
+.ar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ar-materials {
+  min-width: 0;
+  margin-top: 20px;
+}
+.ar-materials details {
+  padding: 12px 0;
+  border-top: 1px solid var(--al-line);
+}
+.ar-materials label {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.ar-materials input,
+.ar-materials select,
+.ar-materials textarea {
+  min-width: 0;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--al-line);
+  border-radius: 6px;
+  background: var(--al-bg);
+  color: var(--al-text);
+  font: inherit;
+}
+.ar-materials textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.ar-materials .ar-check {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: row;
+}
+.analytics-live .ar-check input {
+  min-height: 18px;
+  height: 18px;
+  margin: 2px 4px 0 0;
+  width: 18px;
+  flex: none;
+}
+.ar-materials button {
+  white-space: normal;
+  margin: 4px 0;
+}
+.ar-materials blockquote {
+  margin: 12px 0;
+  padding: 12px;
+  border-left: 2px solid var(--al-line);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+.ar-materials small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.analytics-live .ar-message {
+  display: block;
+  width: 100%;
+  text-align: left !important;
+  overflow-wrap: anywhere;
+}
+.ar-message span {
+  display: block;
+  font-weight: 400;
+  margin-top: 6px;
+  white-space: pre-wrap;
+}
+.ar-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ar-photos img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+}
+.ar-table {
+  overflow-x: auto;
+}
+.ar-table table {
+  width: 100%;
+  font-size: 12px;
+}
+.ar-table th,
+.ar-table td {
+  padding: 6px 4px;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .ar-materials input,
+  .ar-materials select,
+  .ar-materials textarea {
+    font-size: 16px;
+  }
+  .ar-actions {
+    flex-direction: column;
+  }
+}

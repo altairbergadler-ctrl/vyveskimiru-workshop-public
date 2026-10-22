@@ -1,0 +1,22 @@
+/* Product-specific fields and supplied artwork. Layout belongs to interface.css. */
+.product-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:14px}
+.product-picker button{overflow-wrap:anywhere}
+.product-picker b{display:block}
+.product-summary{font-weight:600;color:var(--accent)}
+.artwork-frame{min-height:80px;background:repeating-conic-gradient(#edf0eb 0% 25%,#fff 0% 50%) 0 0/16px 16px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-top:12px;overflow:hidden}
+.artwork-frame img{display:block;max-width:100%;max-height:240px;object-fit:contain}
+.artwork-status{overflow-wrap:anywhere}
+.product-artwork-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.product-artwork-actions button{font-size:12px}
+.product-fields{margin-top:12px}
+.product-picker-label{display:block;font-size:12px;margin-bottom:7px;color:var(--muted)}
+.signage-editor .hint.product-error{color:#925032}
+.product-generation-note{padding:8px 10px;background:#eef7f1;border-radius:7px;margin-bottom:12px}
+.catalog-controls{margin:12px 0}
+.catalog-controls .field{min-width:0}
+.catalog-controls input,.catalog-controls select{max-width:100%}
+.catalog-controls #catalogCount{margin:0 0 8px}
+#catalogSelectionNote,#productFamilyNote,#productCoverageNote{overflow-wrap:anywhere}
+#productFamilyNote{padding:8px 10px;background:#eef7f1;border-radius:7px}
+#productCoverageNote:empty,#catalogSelectionNote:empty{display:none}
+.dynamic-product-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:0}

@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+# Fixed container and Node entrypoint. No Docker management or arbitrary host command.
+[ "$#" -le 1 ] || exit 64
+if [ "$#" -eq 1 ]; then
+  case "$1" in *[!A-Za-z0-9+/=]*) exit 64;; esac
+  [ "${#1}" -le 20000 ] || exit 64
+fi
+exec /usr/bin/docker exec -i --workdir /app finance-pwa node --input-type=module - "$@"

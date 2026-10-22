@@ -1,0 +1,24 @@
+{
+  "fontCount": 228,
+  "totalBytes": 135272044,
+  "errors": [
+    {
+      "family": "News Cycle",
+      "error": "Incomplete Russian alphabet: АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+    },
+    {
+      "family": "Tinos",
+      "error": "No redistributable license file found"
+    },
+    {
+      "family": "Pixelify Sans",
+      "error": "Incomplete Russian alphabet: ОП"
+    }
+  ],
+  "repositoryCommit": "66928797f271fed5ee428544e7229685e2d90127",
+  "licenseCounts": {
+    "Apache License 2.0": 1,
+    "SIL Open Font License 1.1": 222,
+    "Ubuntu Font Licence 1.0": 5
+  }
+}

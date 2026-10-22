@@ -1,0 +1,13 @@
+{
+  "tokenFile": "/run/secrets/workshop/max-bot-token",
+  "caFile": "/run/secrets/workshop/max-root-ca.pem",
+  "secret": "REPLACE_WITH_RANDOM_WEBHOOK_SECRET",
+  "allowedChatIds": [],
+  "codexEnabled": false,
+  "monitorEnabled": false,
+  "notesEnabled": false,
+  "notifications": { "enabled": false, "chatIds": [], "income": true, "avitoThreshold": 500 },
+  "retouch": { "enabled": false, "chatIds": [], "botUserId": 0, "username": "VM_bot", "dailyLimit": 5 },
+  "codexTokenFile": "/run/secrets/workshop/max-codex-token",
+  "webhookUrl": "https://vm-app.ru/api/max/webhook"
+}

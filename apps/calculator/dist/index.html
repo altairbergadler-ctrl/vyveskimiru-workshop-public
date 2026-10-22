@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#13796b">
+  <meta name="description" content="Предварительный расчёт стоимости объёмных букв: буквы, плёнка, каркас и композитная кассета.">
+  <title>Объёмные буквы — калькулятор ВывескиМиру</title>
+  <link rel="stylesheet" href="./styles.css?v=standalone-v1">
+  <script type="module" src="./app.mjs?v=standalone-v1"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="./" aria-label="Калькулятор ВывескиМиру"><span class="brand-mark" aria-hidden="true">ВМ</span>ВывескиМиру</a><span class="prototype">Первый прототип</span></header>
+  <main>
+    <div class="intro"><p class="eyebrow">КАЛЬКУЛЯТОР ВЫВЕСКИ</p><h1>Объёмные буквы</h1><p>Введите текст вывески и размеры. Стоимость пересчитывается сразу — с понятной разбивкой.</p></div>
+    <div class="workspace">
+      <form id="calculator" class="inputs" novalidate>
+        <section class="panel" aria-labelledby="letters-title">
+          <div class="section-heading"><span class="step">01</span><h2 id="letters-title">Буквы</h2></div>
+          <p class="hint">Количество считаем из текста автоматически. Пробелы и переносы строк не учитываются; цифры и знаки учитываются как символы.</p>
+          <div id="letter-rows"></div>
+          <button type="button" class="text-button" id="add-group">+ Добавить буквы другой высоты</button>
+          <div class="tariff"><span>15–50 см включительно <strong>100 ₽/см</strong></span><span>Меньше 15 или больше 50 см <strong>150 ₽/см</strong></span></div>
+          <p class="small-note">На границах 15 и 50 см цена меняется ступенчато — так устроен тариф.</p>
+        </section>
+        <section class="panel" aria-labelledby="size-title">
+          <div class="section-heading"><span class="step">02</span><h2 id="size-title">Габариты вывески</h2></div>
+          <p class="hint">Прямоугольник по крайним точкам всей вывески, включая фон, если он есть.</p>
+          <div class="field-grid"><label for="width">Ширина<div class="input-wrap"><input id="width" name="width" inputmode="decimal" value="240" autocomplete="off" aria-describedby="size-error"><span>см</span></div></label><label for="height">Высота<div class="input-wrap"><input id="height" name="height" inputmode="decimal" value="40" autocomplete="off" aria-describedby="size-error"><span>см</span></div></label></div>
+          <p id="size-error" class="error" hidden></p>
+          <div class="dimension-preview" aria-hidden="true"><span id="diagram-width" class="diagram-width">240 см</span><div class="diagram-box"><span>АБВ</span><small id="diagram-caption">8 букв · 30 см</small></div><span id="diagram-height" class="diagram-height">40 см</span></div>
+          <p id="area-info" class="area-info">Площадь по габаритам: 0,96 м²</p>
+        </section>
+        <section class="panel" aria-labelledby="options-title">
+          <div class="section-heading"><span class="step">03</span><h2 id="options-title">Комплектация</h2></div>
+          <label class="option" for="film"><input type="checkbox" id="film" checked><span><strong>Плёнка на лицевую часть</strong><small>1 500 ₽/пог. м · рулон шириной 1 м</small></span></label>
+          <label class="option" for="cassette"><input type="checkbox" id="cassette"><span><strong>Фон из композитной кассеты</strong><small>7 000 ₽ за метр ширины вывески</small></span></label>
+          <div class="included"><span class="included-icon" aria-hidden="true">✓</span><span><strong>Блок питания и каркас</strong><small>Включены в расчёт · от 2 000 до 6 000 ₽</small></span></div>
+        </section>
+      </form>
+      <aside class="estimate" aria-labelledby="estimate-title">
+        <div class="result-heading"><span class="status-dot" aria-hidden="true"></span><h2 id="estimate-title">Предварительная стоимость</h2></div>
+        <div id="total" class="total" aria-live="polite" aria-atomic="true"><div><small>от</small> <span id="total-min">27 440 ₽</span></div><div><small>до</small> <span id="total-max">31 440 ₽</span></div></div>
+        <p id="result-note" class="result-note">Разница зависит от блока питания и каркаса. Их точную стоимость уточним по вывеске.</p>
+        <div id="breakdown" class="breakdown"></div>
+        <button id="copy" type="button" class="primary-button">Скопировать расчёт <span aria-hidden="true">↗</span></button>
+        <p id="copy-status" class="copy-status" role="status"></p>
+        <div class="assumptions"><h3>Как считаем</h3><p>Буквы: количество × высота × тариф.</p><p>Плёнка: ширина × высота в метрах ÷ 1 м × 1 500 ₽. Расход по площади, без запаса на раскрой.</p><p>Кассета: ширина в метрах × 7 000 ₽.</p><p>Итог: буквы + выбранные опции + 2 000–6 000 ₽ за питание и каркас.</p></div>
+        <p class="scope-note">Этот расчёт охватывает изготовление по указанным тарифам. Монтаж и доставка здесь ещё не рассчитаны.</p>
+      </aside>
+    </div>
+    <footer>ВывескиМиру <span>Объёмные буквы · версия формулы 1</span></footer>
+  </main>
+  <template id="letter-template"><div class="letter-group"><div class="group-heading"><h3></h3><button type="button" class="remove-group" aria-label="Удалить группу букв">Удалить</button></div><label class="sign-text-field"><span class="text-label">Текст вывески</span><textarea class="letter-text" rows="2" placeholder="Например, АПТЕКА 24" autocomplete="off"></textarea></label><div class="field-grid"><label>Количество букв<div class="input-wrap"><input class="letter-count" readonly><span>шт.</span></div></label><label>Высота буквы<div class="input-wrap"><input class="letter-height" inputmode="decimal" autocomplete="off"><span>см</span></div></label></div><p class="group-price"></p><p class="group-error error" hidden></p></div></template>
+</body>
+</html>

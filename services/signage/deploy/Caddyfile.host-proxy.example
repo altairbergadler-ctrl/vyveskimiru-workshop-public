@@ -1,0 +1,24 @@
+# Add ONLY this separate site block to the existing Caddy configuration.
+# Keep every existing site and the existing global options unchanged.
+# Create DNS for signs.vm-app.ru before enabling this site.
+# Replace REPLACE_WITH_BCRYPT_HASH with output from `caddy hash-password`.
+# This upstream assumes Caddy runs on the host or uses network_mode: host.
+# For a Caddy container on a bridge network, connect it to signage-editor_default
+# and change the upstream to signage-editor-app:8080 instead.
+signs.vm-app.ru {
+    basic_auth {
+        owner REPLACE_WITH_BCRYPT_HASH
+    }
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        X-Frame-Options DENY
+        -Server
+    }
+    request_body {
+        max_size 30MB
+    }
+    reverse_proxy 127.0.0.1:18880 {
+        header_up -Authorization
+    }
+}

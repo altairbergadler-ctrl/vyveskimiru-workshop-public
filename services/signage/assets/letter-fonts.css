@@ -1,0 +1,5 @@
+/* PT Sans Narrow by ParaType, SIL OFL 1.1; see fonts/OFL-PT-Sans-Narrow.txt.
+   Deliberately use the bundled bytes, not a different locally installed version.
+   Arial / Arial Narrow remain licensed fonts installed on the user's device. */
+@font-face{font-family:'PT Sans Narrow';font-style:normal;font-weight:400;font-display:block;src:url('fonts/pt-sans-narrow-regular.ttf') format('truetype')}
+@font-face{font-family:'PT Sans Narrow';font-style:normal;font-weight:700;font-display:block;src:url('fonts/pt-sans-narrow-bold.ttf') format('truetype')}

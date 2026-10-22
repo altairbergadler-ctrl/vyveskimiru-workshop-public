@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily finance PWA backup
+
+[Timer]
+OnCalendar=*-*-* 02:20:00 UTC
+Persistent=true
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,65 @@
+name: Workshop source checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  workshop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/workshop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+          cache: npm
+          cache-dependency-path: services/workshop/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - name: Shell syntax
+        run: find deploy qa -name '*.sh' -exec bash -n {} \;
+  static-apps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+          cache: npm
+          cache-dependency-path: apps/fonts/package-lock.json
+      - run: npm test
+        working-directory: apps/calculator
+      - run: npm ci --ignore-scripts
+        working-directory: apps/fonts
+      - run: npm run build
+        working-directory: apps/fonts
+      - run: npm run test:geometry
+        working-directory: apps/fonts
+  python-services:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [signage, stamp]
+    defaults:
+      run:
+        working-directory: services/${{ matrix.component }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - run: python -m pip install -r requirements.txt
+      - if: matrix.component == 'stamp'
+        run: python -m pip install -r requirements-dev.txt
+      - if: matrix.component == 'signage'
+        run: python -m unittest discover -s scripts -p 'test_*.py'
+      - if: matrix.component == 'stamp'
+        run: python -m unittest discover -s tests -p 'test_*.py'

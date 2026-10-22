@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="ru.vmapp.financewidget.ModuleWidgetConfigureActivity"
+    android:description="@string/widget_module_description"
+    android:initialLayout="@layout/module_widget"
+    android:minHeight="50dp"
+    android:minResizeHeight="50dp"
+    android:minResizeWidth="110dp"
+    android:minWidth="110dp"
+    android:previewImage="@drawable/widget_preview_module"
+    android:resizeMode="none"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

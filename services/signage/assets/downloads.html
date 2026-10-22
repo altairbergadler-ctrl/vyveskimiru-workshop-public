@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Скачать проект · Мастерская вывесок</title>
+  <style>
+    :root { color-scheme: light; font-family: Arial, sans-serif; color: #143f4c; background: #f1f5f2; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 40px 20px; }
+    main { max-width: 760px; margin: auto; }
+    .eyebrow { color: #007466; font-size: 13px; font-weight: 700; }
+    h1 { font-size: clamp(28px, 5vw, 38px); line-height: 1.15; margin: 16px 0; }
+    p { line-height: 1.65; color: #567480; }
+    .intro { max-width: 620px; margin-bottom: 28px; }
+    .card { display: block; margin: 14px 0; padding: 24px; border: 1px solid #d4e1dc; border-radius: 16px; background: #fff; }
+    h2 { margin: 0; font-size: 21px; }
+    .card p { margin: 12px 0 20px; }
+    a { color: #007466; text-underline-offset: 3px; }
+    .download { display: inline-block; padding: 13px 18px; border-radius: 9px; background: #007466; color: #fff; font-size: 14px; font-weight: 700; text-decoration: none; }
+    a:focus-visible { outline: 3px solid #7fcabb; outline-offset: 4px; }
+    footer { display: flex; flex-wrap: wrap; gap: 14px 24px; margin-top: 26px; font-size: 14px; }
+    .note { font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Мастерская вывесок</div>
+    <h1>Проект для продолжения работы</h1>
+    <p class="intro">Скачайте приложение с документацией и сохранённую историю. После распаковки проекта начните с файла <strong>vps-project/HANDOFF.md</strong>.</p>
+    <section class="card" aria-labelledby="project-title">
+      <h2 id="project-title">Приложение и документация</h2>
+      <p>Исходный код, руководство пользователя, архитектура, API и инструкции по запуску, обновлению и восстановлению на VPS.</p>
+      <a class="download" href="downloads/signage-editor-handoff.zip" download>Скачать проект · ZIP</a>
+    </section>
+    <section class="card" aria-labelledby="history-title">
+      <h2 id="history-title">История генераций</h2>
+      <p>Снимок истории из 7 заданий: исходные фотографии, параметры и сохранённые результаты. Инструкция по импорту находится в документации проекта.</p>
+      <a class="download" href="downloads/history-handoff-20261008.zip" download>Скачать историю · ZIP</a>
+    </section>
+    <p class="note">Пароли, SSH-ключи и данные входа в подписку не включены. Эти файлы доступны после входа в приложение.</p>
+    <footer>
+      <a href="downloads/SHA256SUMS-handoff.txt" download>Контрольные суммы SHA-256</a>
+      <a href="calibrator.html">Открыть редактор</a>
+      <a href="history.html">Открыть историю</a>
+    </footer>
+  </main>
+</body>
+</html>

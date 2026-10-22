@@ -1,0 +1,12 @@
+[Unit]
+Description=Workshop mail every 30 minutes, 10:00-20:30 Moscow
+
+[Timer]
+OnCalendar=*-*-* 10..20:00,30:00 Europe/Moscow
+AccuracySec=1min
+RandomizedDelaySec=0
+Persistent=false
+Unit=workshop-mail.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Подберите шрифт для объёмной вывески: ваша надпись, кириллица, фильтры, цвет и подсветка.">
+  <title>Шрифты для вашей вывески · ВывескиМиру</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/gallery.css">
+  <script src="assets/stroke.js" defer></script>
+  <script src="assets/gallery.js" defer></script>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="./" aria-label="ВывескиМиру — каталог шрифтов"><span class="brand-mark">ВМ</span><span>ВывескиМиру<small>Шрифты для вывесок</small></span></a><span class="beta">Тестовая версия</span></header>
+<main>
+  <section class="intro"><div><p class="eyebrow">ОБЪЁМНЫЕ БУКВЫ</p><h1>Ваша надпись.<br>Ваш характер.</h1><p class="intro-copy">Посмотрите, как она выглядит в разных шрифтах.<br>Выберите цвет, свет и несколько вариантов для сравнения.<br>Откройте шрифт, чтобы примерить надпись на своей стене.</p></div><div class="intro-number"><strong id="catalog-size">…</strong><span>шрифтов с кириллицей</span><small>Реальные начертания. Ваша надпись.</small></div></section>
+  <section class="workbench" aria-label="Настройки надписи">
+    <div class="text-line"><label for="lettering">Надпись на вывеске<textarea id="lettering" rows="2" maxlength="100" spellcheck="false">ВывескиМиру</textarea></label><label class="case-toggle"><input id="uppercase" type="checkbox"> Все заглавные</label></div>
+    <div class="settings">
+      <label>Исполнение<select id="lighting"><option value="plain">Без подсветки</option><option value="face">Лицевая подсветка</option><option value="halo">Контражур</option></select></label>
+      <label>Фон<select id="scene"><option value="graphite">Тёмный фасад</option><option value="plaster">Светлая стена</option><option value="brick">Кирпичная стена</option><option value="night">Ночной вид</option></select></label>
+      <label>Материал лица<select id="material"><option value="color">Цветной акрил</option><option value="white">Белый акрил</option><option value="gold">Золотистый металл</option><option value="silver">Серебристый металл</option></select></label>
+      <label class="color-label">Цвет лица<input id="face-color" type="color" value="#f3ae45"></label>
+      <label>Высота «Н», см<input id="letter-height" type="number" min="5" max="200" step="1" value="30" inputmode="decimal"></label>
+      <label>Глубина борта, см<input id="letter-depth" type="number" min="1" max="30" step="0.5" value="5" inputmode="decimal"></label>
+    </div>
+    <div class="production-note"><span class="constraint">Штрих от <strong>1,6 см</strong></span><span>Толщина в карточках — ориентир по основной стойке «Н». Всю надпись проверяем по макету перед изготовлением.</span></div>
+  </section>
+  <section class="catalog" aria-label="Каталог шрифтов">
+    <div class="catalog-toolbar"><div><h2>Найдите свой шрифт</h2><p id="result-count" aria-live="polite">Загружаем каталог…</p></div><div class="search-sort"><label class="search"><span class="sr-only">Поиск по названию шрифта или тегу</span><input id="search" type="search" placeholder="Название шрифта или тег"></label><label><span class="sr-only">Сортировка</span><select id="sort"><option value="recommended">Сначала популярные</option><option value="alphabet">По алфавиту</option><option value="weight">Сначала жирные</option></select></label><button id="favorites-only" class="quiet-button" type="button" aria-pressed="false">♡ Избранное <span id="favorite-count">0</span></button></div></div>
+    <div id="tags" class="tags" aria-label="Фильтры по тегам"></div>
+    <div class="active-filter-note"><span>Несколько тегов: показываем совпадение со всеми.</span><button id="clear-filters" type="button">Сбросить фильтры</button></div>
+    <div id="font-grid" class="font-grid"></div>
+    <div id="empty" class="empty" hidden><h3>Подходящих шрифтов пока нет</h3><p>Снимите один из тегов или измените поиск.</p></div>
+    <div class="more-row"><button id="load-more" class="primary-button" type="button" hidden>Показать ещё</button></div>
+    <div id="load-error" class="empty" role="alert" hidden><h3>Не удалось загрузить каталог</h3><p>Проверьте соединение и обновите страницу.</p><button id="retry-catalog" type="button" class="primary-button">Попробовать снова</button></div>
+  </section>
+  <section id="comparison-bar" class="comparison-bar" aria-label="Выбранные для сравнения шрифты" hidden><div><strong>Сравнение <span id="compare-count">0</span>/4</strong><span id="compare-names"></span></div><div class="compare-actions"><button id="compare-clear" class="quiet-button" type="button">Очистить</button><button id="compare-open" class="primary-button" type="button">Сравнить</button></div></section>
+  <footer><div><strong>ВывескиМиру</strong><span>Подбор шрифта для объёмных букв</span></div><details><summary>О превью и размере</summary><p>Каталог показывает реальный шрифт с имитацией объёма, тени и свечения. Это визуальный ориентир. Свет, металл и цвет на экране могут отличаться от готового изделия.</p><p>Высота задаётся по прописной «Н». Масштаб карточек подстраивается под длину текста; сравнивайте фактическую ширину в сантиметрах. Тонкие элементы, засечки, перемычки и отверстия требуют проверки всей надписи перед изготовлением.</p><p>Шрифты хранятся на этом сайте с открытыми лицензиями. Избранное сохраняется только в вашем браузере. Передать выбор можно ссылкой из окна просмотра.</p></details><button id="licenses-open" type="button" class="text-button">Источники и лицензии</button></footer>
+</main>
+<dialog id="detail-dialog" class="detail-dialog"><div class="dialog-top"><div><p class="eyebrow">ВАШ ВАРИАНТ</p><h2 id="detail-title"></h2></div><button class="close-button" type="button" data-close aria-label="Закрыть просмотр">×</button></div><canvas id="detail-canvas" width="1400" height="680" role="img" aria-label="Крупное превью выбранной надписи"></canvas><div class="detail-info"><p id="detail-dimensions"></p><p id="detail-stroke"></p><p id="detail-glyphs" class="glyph-warning" hidden></p></div><div class="detail-controls"><label>Ракурс <input id="angle" type="range" min="-35" max="35" step="1" value="15"><output id="angle-value">15°</output></label><div><button id="detail-favorite" class="quiet-button" type="button">В избранное</button><button id="detail-compare" class="quiet-button" type="button">Добавить к сравнению</button></div></div><div class="tryon-entry"><div><strong>Примерьте на своей стене</strong><span>Два тестовых режима</span></div><button id="try-ar" class="primary-button" type="button">AR через камеру</button><button id="try-photo" class="quiet-button" type="button">По фотографии</button></div><div class="dialog-actions"><button id="share" class="primary-button" type="button">Скопировать ссылку</button><button id="download-png" class="quiet-button" type="button">Скачать изображение</button><a id="detail-license" target="_blank" rel="noopener">Лицензия шрифта</a></div><label id="share-fallback" hidden>Ссылка на вариант<input id="share-url" type="text" readonly></label><p class="detail-caption">Имитация объёма · точное начертание из файла шрифта · толщина всей надписи проверяется перед изготовлением</p></dialog>
+<dialog id="compare-dialog" class="compare-dialog"><div class="dialog-top"><div><p class="eyebrow">ОДНА НАДПИСЬ — РАЗНЫЕ ШРИФТЫ</p><h2>Сравните варианты</h2></div><button class="close-button" type="button" data-close aria-label="Закрыть сравнение">×</button></div><div id="compare-grid" class="font-grid"></div><p class="detail-caption">У всех вариантов одна высота «Н». Более длинная надпись показана с меньшим масштабом камеры.</p></dialog>
+<dialog id="licenses-dialog" class="licenses-dialog"><div class="dialog-top"><h2>Источники и лицензии</h2><button class="close-button" type="button" data-close aria-label="Закрыть лицензии">×</button></div><p>Открытые шрифты из Google Fonts. У каждого начертания сохранён исходный файл лицензии. Каталог не подтверждает пригодность шрифта для изготовления.</p><div id="license-list"></div></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

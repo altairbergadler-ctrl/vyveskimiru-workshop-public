@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Проекты и генерации · Мастерская вывесок</title>
+<link rel="stylesheet" href="history.css"><link rel="stylesheet" href="preview.css">
+</head>
+<body>
+<div id="authExpiredNotice" class="auth-notice" role="alert" hidden>Сеанс входа закончился. <a href="login.html?next=history.html" target="_blank" rel="noopener">Войти в новой вкладке</a>, затем нажмите «Обновить».</div>
+<header><div><small>Мастерская вывесок</small><h1>Проекты и генерации</h1></div><nav class="history-header-actions" aria-label="Действия с проектами"><a class="button primary" href="calibrator.html?newProject=1">+ Новый проект</a><a class="history-link" href="calibrator.html">Открыть редактор</a></nav></header>
+<main>
+<p class="intro">Все варианты собраны по проектам. Сохранённые на сервере правки можно продолжить с любого компьютера после входа в редактор.</p>
+<nav id="projectBreadcrumb" class="project-breadcrumb" aria-label="Путь в истории" hidden><button id="backToProjects" type="button">← Все проекты</button><span id="breadcrumbName"></span></nav>
+<section id="projectHeading" class="project-heading" aria-labelledby="projectTitle" hidden><div><small id="projectMeta"></small><h2 id="projectTitle" tabindex="-1"></h2><p class="hint">Откройте вариант, чтобы посмотреть результат и его параметры.</p></div><a id="continueProject" class="button primary" target="_blank" rel="noopener">Продолжить редактирование ↗</a></section>
+<form id="searchForm" class="search-form" role="search"><label id="searchLabel" for="search">Найти проект по названию или тексту варианта</label><div><input id="search" type="search" maxlength="300" placeholder="Например, ЦВЕТЫ" autocomplete="off"><button class="primary" type="submit">Найти</button><button id="clearSearch" type="button">Сбросить</button><button id="refreshHistory" type="button">Обновить</button></div></form>
+<section id="mergePanel" class="merge-panel" aria-labelledby="mergeTitle" hidden><div class="merge-summary"><h2 id="mergeTitle">Объединить проекты</h2><span id="selectionCount"></span><button id="clearSelection" type="button">Снять выбор</button></div><div class="merge-controls"><label for="mergeTarget">Сохранить название и текущие правки проекта<select id="mergeTarget"></select></label><button id="mergeProjects" class="primary" type="button" disabled>Объединить выбранные</button></div><p id="mergeHint" class="hint">Выберите минимум два проекта. Все их варианты станут одной группой; файлы генераций сохранятся.</p><p id="mergeStatus" class="status" role="status" aria-live="polite"></p></section>
+<p id="historyStatus" class="status" role="status" aria-live="polite">Загружаю проекты…</p>
+<section id="detail" class="detail" aria-labelledby="detailTitle" hidden>
+<div class="detail-heading"><div><small id="detailMeta"></small><h2 id="detailTitle" tabindex="-1">Сохранённый макет</h2></div><button id="closeDetail" type="button" aria-label="Закрыть выбранный результат">Закрыть</button></div>
+<p id="detailStatus" class="status" role="status" aria-live="polite"></p>
+<div class="result-specification"><b>Сохранённые параметры этого запроса</b><div id="detailColors" class="result-colors"></div><p id="detailMaterial" class="hint"></p><p class="hint">HEX — приблизительный экранный образец материала, без подтверждённого соответствия каталогу. Свет и тени меняют его вид. Макет не является цветопробой.</p></div>
+<div class="view-tabs" role="group" aria-label="Изображение для просмотра"><button id="viewRender" type="button">Макет на фото</button><button id="viewBase" type="button">Световая основа</button><button id="viewSource" type="button">Исходное фото</button></div>
+<div id="detailFrame" class="image-preview-frame"><img id="detailImage" alt="Сохранённый макет вывески" hidden></div>
+<div class="preview-actions"><button id="openDetailImage" type="button" disabled>Открыть крупно</button><span class="hint">Вписано в окно · полный размер и масштаб 100% доступны в просмотре.</span></div>
+<p id="detailAudit" class="hint"></p>
+<div class="detail-actions"><a id="downloadImage" class="button primary" download hidden>Скачать макет PNG</a><a id="downloadOriginalArtwork" class="button" download hidden>Скачать точный PNG макета</a><a id="downloadProject" class="button" download>Скачать проект JSON</a><a id="restoreProject" class="button" target="_blank" rel="noopener">Редактировать этот вариант ↗</a></div>
+<p class="hint">Редактирование варианта восстановит его исходное фото, калибровку, ТЗ и готовый макет в новой вкладке. Новый запрос на генерацию не отправляется. Для последних сохранённых правок используйте «Продолжить редактирование» в проекте.</p>
+</section>
+<div id="historyGrid" class="history-grid" aria-label="Сохранённые проекты"></div>
+<button id="loadMore" class="load-more" type="button" hidden>Показать ещё</button>
+</main>
+<script src="catalog.js"></script><script src="products.js"></script><script src="preview.js"></script><script src="history.js"></script>
+</body>
+</html>

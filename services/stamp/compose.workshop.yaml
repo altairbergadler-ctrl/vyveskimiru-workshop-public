@@ -1,0 +1,59 @@
+name: workshop-stamp
+
+# Standalone deployment configuration: use -f compose.workshop.yaml. This
+# deliberately does not require or accept a separate stamping login password.
+services:
+  stamp:
+    build: .
+    image: ${STAMP_IMAGE:-workshop-stamp:local}
+    container_name: workshop-stamp
+    restart: unless-stopped
+    init: true
+    user: "10001:10001"
+    # Caddy strips /tools/stamp; Uvicorn must include it in ASGI scope.path so
+    # mounted static routes see the same path as API routing and root_path.
+    command: ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--root-path", "/tools/stamp", "--no-proxy-headers", "--limit-concurrency", "20", "--timeout-keep-alive", "5"]
+    ports:
+      - "127.0.0.1:8187:8080"
+    env_file:
+      - .env
+    environment:
+      AUTH_MODE: workshop
+      WORKSHOP_AUTH_URL: ${WORKSHOP_AUTH_URL:?Set WORKSHOP_AUTH_URL to the internal Workshop /api/session endpoint}
+      DATA_DIR: /data
+      APP_BASE_PATH: /tools/stamp
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-25}
+      MAX_PAGES: ${MAX_PAGES:-50}
+      MAX_JOBS: ${MAX_JOBS:-100}
+      MAX_TOTAL_MB: ${MAX_TOTAL_MB:-500}
+      MAX_RESULT_MB: ${MAX_RESULT_MB:-100}
+    networks:
+      - workshop
+    volumes:
+      - ./data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1024m
+    cpus: 1.0
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5).close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  workshop:
+    external: true
+    name: finance-pwa_default

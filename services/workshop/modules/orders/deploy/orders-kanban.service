@@ -1,0 +1,40 @@
+[Unit]
+Description=Workshop orders kanban
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+WorkingDirectory=/opt/orders-kanban/app
+ExecStart=/usr/bin/node /opt/orders-kanban/app/server/index.mjs
+Environment=NODE_ENV=production
+Environment=PORT=18110
+Environment=PUBLIC_ORIGIN=https://vm-app.ru
+Environment=AUTH_ORIGIN=https://vm-app.ru
+Environment=AUTH_URL=http://127.0.0.1:18100/api/session
+Environment=GOOGLE_SPREADSHEET_ID=EXAMPLE_PRODUCTION_GOOGLE_SHEET_ID_CHANGE_BEFORE_USE
+EnvironmentFile=/opt/orders-kanban/shared/runtime.env
+StateDirectory=orders-kanban
+StateDirectoryMode=0700
+Environment=MEDIA_DIRECTORY=/var/lib/orders-kanban/media
+Environment=ORDER_CREATE_DIR=/var/lib/orders-kanban/creation
+Environment=CLIENT_CREATE_DIR=/var/lib/orders-kanban/client-creation
+Environment=POSITION_CREATE_DIR=/var/lib/orders-kanban/position-creation
+LoadCredential=google-sheets.json:/opt/finance-pwa/shared/google-service-account.json
+Restart=on-failure
+RestartSec=4
+TimeoutStopSec=40
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

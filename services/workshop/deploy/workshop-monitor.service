@@ -1,0 +1,9 @@
+[Unit]
+Description=Check workshop release, modules and Google connectivity
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec finance-pwa node server/diagnose-live.mjs
+TimeoutStartSec=55
+StandardOutput=journal
+StandardError=journal

@@ -1,0 +1,28 @@
+vm-app.ru {
+  encode zstd gzip
+  reverse_proxy 127.0.0.1:18100
+
+  header {
+    Strict-Transport-Security "max-age=31536000"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "no-referrer"
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    -Server
+  }
+}
+
+www.vm-app.ru {
+  redir https://vm-app.ru{uri} permanent
+}
+
+http://109.71.240.24 {
+  reverse_proxy 127.0.0.1:18100
+  header {
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "no-referrer"
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    -Server
+  }
+}

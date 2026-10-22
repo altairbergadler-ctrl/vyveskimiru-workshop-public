@@ -1,0 +1,24 @@
+{
+    email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+    # The login covers the editor, API, history, previews and original photos.
+    basic_auth {
+        {$EDITOR_USER} {$EDITOR_PASSWORD_HASH}
+    }
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        X-Frame-Options DENY
+        -Server
+    }
+    request_body {
+        max_size 30MB
+    }
+    reverse_proxy app:8080 {
+        # Keep the original Host and Origin for the editor's explicit allowlist.
+        # The backend does not need the browser's Basic Auth credentials.
+        header_up -Authorization
+    }
+}

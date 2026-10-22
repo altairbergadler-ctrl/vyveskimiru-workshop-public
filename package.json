@@ -1,0 +1,8 @@
+{
+  "name": "vyveskimiru-workshop",
+  "private": true,
+  "scripts": {
+    "check": "npm --prefix services/workshop run check && npm --prefix apps/calculator test",
+    "check:fonts": "npm --prefix apps/fonts run test:geometry"
+  }
+}

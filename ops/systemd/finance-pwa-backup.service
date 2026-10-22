@@ -1,0 +1,7 @@
+[Unit]
+Description=Back up workshop Google workbook, data, media, code and configuration
+
+[Service]
+Type=oneshot
+ExecStart=/opt/finance-pwa/app/deploy/backup-workshop.sh
+TimeoutStartSec=600

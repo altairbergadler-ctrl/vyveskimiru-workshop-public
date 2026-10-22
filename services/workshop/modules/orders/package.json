@@ -1,0 +1,12 @@
+{
+  "name": "workshop-orders-kanban",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node server/index.mjs",
+    "test": "node --test --test-concurrency=1 server/*.test.mjs",
+    "check": "node --check server/index.mjs && node --check server/orders.mjs && node --check server/archive.mjs && node --check server/editing.mjs && node --check server/creation.mjs && node --check server/clients.mjs && node --check server/positions.mjs && node --check server/sheets.mjs && node --check server/media.mjs && node --check server/finance-bridge.mjs && node --check public/app.js && node --check public/workspace.js && node --check public/board-model.js"
+  }
+}

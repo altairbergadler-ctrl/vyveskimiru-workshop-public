@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход — редактор вывесок</title>
+  <link rel="stylesheet" href="login.css">
+  <script src="login.js" defer></script>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Редактор вывесок</p>
+    <h1>Вход в приложение</h1>
+    <p>Введите пароль, чтобы открыть редактор и историю макетов.</p>
+    <form id="login-form">
+      <label for="password">Пароль</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required autofocus maxlength="1024">
+      <button type="submit">Войти</button>
+      <p id="login-message" role="status" aria-live="polite"></p>
+    </form>
+  </main>
+</body>
+</html>

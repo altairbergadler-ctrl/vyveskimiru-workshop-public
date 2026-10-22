@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.application'
+}
+
+def releaseStore = System.getenv('FINANCE_WIDGET_KEYSTORE')
+def releaseStorePassword = System.getenv('FINANCE_WIDGET_STORE_PASSWORD')
+def releaseKeyPassword = System.getenv('FINANCE_WIDGET_KEY_PASSWORD')
+
+android {
+    namespace 'ru.vmapp.financewidget'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+
+    defaultConfig {
+        applicationId 'ru.vmapp.financewidget'
+        minSdk 23
+        targetSdk 35
+        versionCode 4
+        versionName '1.1.0'
+    }
+
+    signingConfigs {
+        release {
+            if (releaseStore) {
+                storeFile file(releaseStore)
+                storePassword releaseStorePassword
+                keyAlias 'finance-widget'
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (releaseStore) signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}

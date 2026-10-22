@@ -1,0 +1,14 @@
+{
+  "name": "vm-font-gallery",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-tryon.mjs",
+    "test:geometry": "node tests/ar-geometry.test.mjs"
+  },
+  "dependencies": {
+    "@google/model-viewer": "4.4.0",
+    "opentype.js": "2.0.0",
+    "three": "0.183.2"
+  },
+  "devDependencies": {"esbuild": "0.28.2"}
+}

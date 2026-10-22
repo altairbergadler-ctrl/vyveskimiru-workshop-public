@@ -1,0 +1,24 @@
+[Unit]
+Description=Workshop personal MAX assistant via Codex
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=workshop-assistant
+Group=workshop-assistant
+Environment=HOME=/var/lib/workshop-assistant
+ExecStart=/usr/bin/node /opt/workshop-codex-bridge/max-codex-broker.mjs
+RuntimeDirectory=workshop-codex
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ReadWritePaths=/var/lib/workshop-assistant /run/workshop-codex
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

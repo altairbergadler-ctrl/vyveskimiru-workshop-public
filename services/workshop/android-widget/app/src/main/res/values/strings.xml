@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VM — виджеты</string>
+
+    <string name="widget_quick_name">Быстрые действия</string>
+    <string name="widget_today_name">Сегодня</string>
+    <string name="widget_pulse_name">Пульс бизнеса</string>
+    <string name="widget_module_name">Модуль раздела</string>
+
+    <string name="widget_description">Расход, доход, производство и склад в компактном виджете</string>
+    <string name="widget_today_description">Три главных рабочих раздела на сегодня</string>
+    <string name="widget_pulse_description">Быстрый доступ руководителя к финансам, заказам, клиентам и складу</string>
+    <string name="widget_module_description">Один выбранный раздел в компактном формате</string>
+
+    <string name="expense">Расход</string>
+    <string name="income">Доход</string>
+    <string name="production">Цех</string>
+    <string name="warehouse">Склад</string>
+    <string name="expense_description">Открыть добавление расхода</string>
+    <string name="income_description">Открыть добавление дохода</string>
+    <string name="production_description">Открыть производство</string>
+    <string name="warehouse_description">Открыть склад</string>
+
+    <string name="pulse_title">Пульс бизнеса</string>
+    <string name="pulse_finance">Финансы</string>
+    <string name="pulse_orders">Заказы</string>
+    <string name="pulse_clients">Клиенты</string>
+    <string name="pulse_warehouse">Склад</string>
+    <string name="pulse_finance_description">Открыть финансовый дашборд</string>
+    <string name="pulse_orders_description">Открыть канбан заказов</string>
+    <string name="pulse_clients_description">Открыть клиентов и задолженности</string>
+    <string name="pulse_warehouse_description">Открыть склад и остатки</string>
+
+    <string name="today_title">Сегодня</string>
+    <string name="today_subtitle">Что проверить сейчас</string>
+    <string name="today_orders">Заказы и сроки</string>
+    <string name="today_production">План производства</string>
+    <string name="today_warehouse">Остатки склада</string>
+    <string name="today_orders_description">Открыть заказы и сроки</string>
+    <string name="today_production_description">Открыть план производства</string>
+    <string name="today_warehouse_description">Открыть остатки склада</string>
+
+    <string name="module_finance">Финансы</string>
+    <string name="module_orders">Заказы</string>
+    <string name="module_production">Цех</string>
+    <string name="module_warehouse">Склад</string>
+    <string name="module_finance_description">Открыть дашборд</string>
+    <string name="module_orders_description">Открыть канбан</string>
+    <string name="module_production_description">Открыть производство</string>
+    <string name="module_warehouse_description">Открыть остатки</string>
+    <string name="module_setup_title">Что показать в модуле?</string>
+    <string name="module_setup_description">Этот выбор сохраняется только для данного экземпляра. Можно установить несколько модулей.</string>
+    <string name="module_choice_format">%1$s\n%2$s</string>
+    <string name="setup_title">Выберите виджет</string>
+    <string name="setup_description">Установите один или несколько вариантов. Каждый открывает нужный раздел vm-app.ru.</string>
+    <string name="widget_quick_button">Быстрые действия · 2×2\nРасход, доход, цех и склад</string>
+    <string name="widget_today_button">Сегодня · 4×3\nЗаказы, производство и остатки</string>
+    <string name="widget_pulse_button">Пульс бизнеса · 4×2\nФинансы, заказы, клиенты и склад</string>
+    <string name="widget_module_button">Модуль раздела · 2×1\nОдин выбранный раздел</string>
+    <string name="open_pwa">Открыть приложение</string>
+    <string name="add_manually">Зажмите свободное место на рабочем столе, выберите «Виджеты» и найдите «VM — виджеты».</string>
+    <string name="privacy_note">Виджеты не хранят PIN, cookies и финансовые данные.</string>
+</resources>

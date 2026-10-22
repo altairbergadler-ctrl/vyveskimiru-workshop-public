@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "answer": { "type": "string" },
+    "note": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "object", "properties": { "orderId": { "type": "string" }, "quote": { "type": "string" } }, "required": ["orderId", "quote"], "additionalProperties": false }
+      ]
+    }
+  },
+  "required": ["answer", "note"],
+  "additionalProperties": false
+}

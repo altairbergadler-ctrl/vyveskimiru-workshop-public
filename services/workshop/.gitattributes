@@ -1,0 +1,7 @@
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yaml text eol=lf
+android-widget/gradlew text eol=lf
+android-widget/gradlew.bat text eol=crlf
+android-widget/gradle/wrapper/gradle-wrapper.jar binary
+.githooks/* text eol=lf

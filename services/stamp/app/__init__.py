@@ -1,0 +1,1 @@
+"""Private PDF stamp service."""

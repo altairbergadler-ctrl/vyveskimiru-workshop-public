@@ -1,0 +1,17 @@
+.git
+.next
+.vinext
+.wrangler
+data
+dist
+node_modules
+work
+outputs
+**/*.sqlite3*
+**/*.bundle
+**/*.jks
+**/*.keystore
+google-service-account.json
+*.log
+.env*
+!/.env.example

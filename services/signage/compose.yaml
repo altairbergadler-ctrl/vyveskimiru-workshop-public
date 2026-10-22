@@ -1,0 +1,63 @@
+name: channel-letter-mockups
+
+services:
+  app:
+    image: channel-letter-mockups:${APP_VERSION:-vps-1}
+    build:
+      context: .
+      args:
+        CODEX_VERSION: ${CODEX_VERSION:-0.162.0-alpha.2}
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 48m
+    environment:
+      EDITOR_HOST: 0.0.0.0
+      EDITOR_PORT: "8080"
+      EDITOR_OUTPUT: /data/jobs
+      EDITOR_PUBLIC_ORIGIN: https://${DOMAIN:?Set DOMAIN in .env}
+      CODEX_HOME: /home/app/.codex
+    volumes:
+      - data:/data
+      - codex_home:/home/app/.codex
+    expose:
+      - "8080"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  caddy:
+    image: caddy:2.11.7-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+      EDITOR_USER: ${EDITOR_USER:?Set EDITOR_USER in .env}
+      EDITOR_PASSWORD_HASH: ${EDITOR_PASSWORD_HASH:?Set EDITOR_PASSWORD_HASH in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy:/etc/caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  data:
+  codex_home:
+  caddy_data:
+  caddy_config:

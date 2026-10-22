@@ -1,0 +1,368 @@
+[
+  {
+    "filename": "modules/orders/server/clients.mjs",
+    "code": "eslint(no-control-regex)",
+    "message": "Unexpected control character",
+    "source": "c23df743caa2e662b9a905778d1ce561f9ba44b8c01335d8d0a3bafd320cd9f0"
+  },
+  {
+    "filename": "modules/orders/server/positions.mjs",
+    "code": "eslint(no-control-regex)",
+    "message": "Unexpected control character",
+    "source": "a1fe5aff86dd46721a3e107d3a31b346a132dc7494569e47ff58b35087254068"
+  },
+  {
+    "filename": "modules/orders/server/creation.mjs",
+    "code": "eslint(no-control-regex)",
+    "message": "Unexpected control character",
+    "source": "c7d1986811fc3a197127ca4bed69693f39a0d8cc7d4c34942a0bfd545c9b864e"
+  },
+  {
+    "filename": "modules/orders/server/media.mjs",
+    "code": "eslint(no-control-regex)",
+    "message": "Unexpected control character",
+    "source": "17927ff9ba1fb6a52d58991f617f84961a1d5c73252d22f62237e3cdc362001f"
+  },
+  {
+    "filename": "modules/orders/public/workspace.js",
+    "code": "eslint(no-unused-vars)",
+    "message": "Parameter 'index' is declared but never used. Unused parameters should start with a '_'.",
+    "source": "3822ea8956912d3bd36473d2b1c1ef79a0f384951320a7c8e29628f7b381eef9"
+  },
+  {
+    "filename": "modules/orders/server/index.mjs",
+    "code": "eslint(no-control-regex)",
+    "message": "Unexpected control characters",
+    "source": "adc08dd686b41c9deb0965e6d3ae3f5169840a80dcdeb4d5b493507099a3f1ca"
+  },
+  {
+    "filename": "modules/orders/server/editing.mjs",
+    "code": "eslint(no-control-regex)",
+    "message": "Unexpected control character",
+    "source": "c341ffcd0adb3310093248bb009673215c759fa50d4e723649febb70a2f15a02"
+  },
+  {
+    "filename": "components/ui/button-group.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `address, details, fieldset, hgroup, optgroup` over `role` attribute `group`.",
+    "source": "8011df4bd56840a73eae7d902f0ae9b6932ca90b9fd186a567e8bec3faf468e6"
+  },
+  {
+    "filename": "components/ui/input-group.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `address, details, fieldset, hgroup, optgroup` over `role` attribute `group`.",
+    "source": "8011df4bd56840a73eae7d902f0ae9b6932ca90b9fd186a567e8bec3faf468e6"
+  },
+  {
+    "filename": "components/ui/input-group.tsx",
+    "code": "jsx-a11y(click-events-have-key-events)",
+    "message": "Enforce a clickable non-interactive element has at least one keyboard event listener.",
+    "source": "d70b8e28e0ce87164f95f8144e86fc9f3bb2ceb1b8c8f765683ab95f70ffd867"
+  },
+  {
+    "filename": "components/ui/input-group.tsx",
+    "code": "jsx-a11y(no-noninteractive-element-interactions)",
+    "message": "Non-interactive elements should not be assigned mouse or keyboard event listeners.",
+    "source": "d70b8e28e0ce87164f95f8144e86fc9f3bb2ceb1b8c8f765683ab95f70ffd867"
+  },
+  {
+    "filename": "components/ui/input-group.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `address, details, fieldset, hgroup, optgroup` over `role` attribute `group`.",
+    "source": "8011df4bd56840a73eae7d902f0ae9b6932ca90b9fd186a567e8bec3faf468e6"
+  },
+  {
+    "filename": "components/ui/pagination.tsx",
+    "code": "jsx-a11y(anchor-has-content)",
+    "message": "Missing accessible content when using `a` elements.",
+    "source": "ded466fdcb6491745351b07e1b33fc6a48cc7da4f4da7b17e18cf74f1d50585e"
+  },
+  {
+    "filename": "components/ui/label.tsx",
+    "code": "jsx-a11y(label-has-associated-control)",
+    "message": "A form label must be associated with a control.",
+    "source": "54fce323234ef271a4a0314d5a0f8b6bc9dec9d84ae90a65e805a451f52efbb1"
+  },
+  {
+    "filename": "components/ui/breadcrumb.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `a, area` over `role` attribute `link`.",
+    "source": "e2aa94748a798054aef071ad9c3a5eefddb2f7a7bf913830dd1eb337d1ea7bd8"
+  },
+  {
+    "filename": "components/ui/spinner.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `output` over `role` attribute `status`.",
+    "source": "5eb5ce93f35465131830237cadbd76c59ada923bef34d185d4b07884c78c2d2f"
+  },
+  {
+    "filename": "components/ui/input-otp.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `hr` over `role` attribute `separator`.",
+    "source": "56f8c37d4216c357eaa41ec5fd3bb86897d6bb07d8d9d37d1bd36b83805a7aea"
+  },
+  {
+    "filename": "components/ui/item.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `menu, ol, ul` over `role` attribute `list`.",
+    "source": "239581b8429708126d779c1b81d8a2636277cecea3c83483e51c96a4d0ad51a9"
+  },
+  {
+    "filename": "components/ui/carousel.tsx",
+    "code": "react(react-compiler)",
+    "message": "EffectSetState: Calling setState synchronously within an effect can trigger cascading renders",
+    "source": "0eb4708bc8cedcbf80852d78ecb061e88df12acf02ff029c95f02580db4ca1e5"
+  },
+  {
+    "filename": "components/ui/carousel.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `section` over `role` attribute `region`.",
+    "source": "76ca64da3d8c9ba257d4a58271eb94d936d3ac4caa715f154876eccc73fcef57"
+  },
+  {
+    "filename": "components/ui/carousel.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `address, details, fieldset, hgroup, optgroup` over `role` attribute `group`.",
+    "source": "8011df4bd56840a73eae7d902f0ae9b6932ca90b9fd186a567e8bec3faf468e6"
+  },
+  {
+    "filename": "hooks/use-mobile.ts",
+    "code": "react(react-compiler)",
+    "message": "EffectSetState: Calling setState synchronously within an effect can trigger cascading renders",
+    "source": "d8bb55786408d9ce58454900702892dd87cfe8de6605b26a1619fe216d3acf04"
+  },
+  {
+    "filename": "components/ui/field.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `address, details, fieldset, hgroup, optgroup` over `role` attribute `group`.",
+    "source": "8011df4bd56840a73eae7d902f0ae9b6932ca90b9fd186a567e8bec3faf468e6"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "react(react-compiler)",
+    "message": "EffectSetState: Calling setState synchronously within an effect can trigger cascading renders",
+    "source": "fd70547d99f54de3ec9e6fe9560c7edc6c914457837a9256469014d015bd8e8a"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "react(react-compiler)",
+    "message": "EffectSetState: Calling setState synchronously within an effect can trigger cascading renders",
+    "source": "61608002e2aa506872715197e0ca2014e3f4a5d0da89a2ccfe71d863f296780a"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "react(react-compiler)",
+    "message": "EffectSetState: Calling setState synchronously within an effect can trigger cascading renders",
+    "source": "06cb6213d890d148f3bf4243540418c6622a4ac2e3289e1b475e3610278ae8d9"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(no-autofocus)",
+    "message": "The `autoFocus` attribute is found here, which can cause usability issues for sighted and non-sighted users.",
+    "source": "52aa90e60433a1ebae8a0462172806ca4ed0ae2c19ffa35b0d3e30ccfb1d6093"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(anchor-has-content)",
+    "message": "Missing accessible content when using `a` elements.",
+    "source": "3fe7f2e0a46876d38c038455aac1d3e6cc3e56e3c185142c89febbf9e219e359"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(control-has-associated-label)",
+    "message": "A control must be associated with a text label.",
+    "source": "3fe7f2e0a46876d38c038455aac1d3e6cc3e56e3c185142c89febbf9e219e359"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(anchor-has-content)",
+    "message": "Missing accessible content when using `a` elements.",
+    "source": "70e42911362d0a38b4333b5232dcf980b55e0d5b238e99eda0474e8529199502"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(control-has-associated-label)",
+    "message": "A control must be associated with a text label.",
+    "source": "70e42911362d0a38b4333b5232dcf980b55e0d5b238e99eda0474e8529199502"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(anchor-has-content)",
+    "message": "Missing accessible content when using `a` elements.",
+    "source": "656fb5d6bd0e5255471a97bf5fcc77ce5535d329660b2ed92f6fddeb66024b20"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(control-has-associated-label)",
+    "message": "A control must be associated with a text label.",
+    "source": "656fb5d6bd0e5255471a97bf5fcc77ce5535d329660b2ed92f6fddeb66024b20"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(anchor-has-content)",
+    "message": "Missing accessible content when using `a` elements.",
+    "source": "340e788b7b99c1d49173cf6ec3d56eac07840fadaab61239e434c5422f3a08f2"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(control-has-associated-label)",
+    "message": "A control must be associated with a text label.",
+    "source": "340e788b7b99c1d49173cf6ec3d56eac07840fadaab61239e434c5422f3a08f2"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(anchor-has-content)",
+    "message": "Missing accessible content when using `a` elements.",
+    "source": "911791a9e5f78fc95ef4a73dcba7f14a8a3800e56516dabb275d4e512adfdf40"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(control-has-associated-label)",
+    "message": "A control must be associated with a text label.",
+    "source": "911791a9e5f78fc95ef4a73dcba7f14a8a3800e56516dabb275d4e512adfdf40"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(anchor-has-content)",
+    "message": "Missing accessible content when using `a` elements.",
+    "source": "486c9b12a5006893ccf22734f4e3992b59f8357521cef3d9af9588a0d9e52300"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(control-has-associated-label)",
+    "message": "A control must be associated with a text label.",
+    "source": "486c9b12a5006893ccf22734f4e3992b59f8357521cef3d9af9588a0d9e52300"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `output` over `role` attribute `status`.",
+    "source": "220b6f32bfe9db27cf58ce6048857c4eab70afc04136a13ad12501033ab12729"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(control-has-associated-label)",
+    "message": "A control must be associated with a text label.",
+    "source": "5889a13c93fb4eff935a7f6582b27138405d67b1e6a99f3e4f5ef78434d63020"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(no-autofocus)",
+    "message": "The `autoFocus` attribute is found here, which can cause usability issues for sighted and non-sighted users.",
+    "source": "89329f0c1334d24925d8cd25831eebd5f7ec194095af92cd3ee88ddd97875166"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "jsx-a11y(prefer-tag-over-role)",
+    "message": "Prefer `output` over `role` attribute `status`.",
+    "source": "4b721318dede96814223c05bd828f57cceaab770f21e2e836c1a91c4ef47fe8c"
+  },
+  {
+    "filename": "components/ui/chart.tsx",
+    "code": "typescript(restrict-template-expressions)",
+    "message": "Invalid type used in template literal expression.",
+    "source": "e3f8166393cac765b00fd6934e1706f39917a4f118136c503b7745033ee88621"
+  },
+  {
+    "filename": "components/ui/chart.tsx",
+    "code": "typescript(restrict-template-expressions)",
+    "message": "Invalid type used in template literal expression.",
+    "source": "a614a71863d59acb5a900385ec601ddbb00318f72a296bdf43d5b0638b220879"
+  },
+  {
+    "filename": "components/ui/chart.tsx",
+    "code": "typescript(restrict-template-expressions)",
+    "message": "Invalid type used in template literal expression.",
+    "source": "1ef7da980144d18af7af4d602b154915418e6c26eed8db05e1c8fc69899807bc"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "typescript(no-base-to-string)",
+    "message": "'values.get('comment') ?? ''' may use Object's default stringification format ('[object Object]') when stringified.",
+    "source": "dda8a960b6ac8011ad537dd75b4ea9f76d1e59aa15dc10131287d9005cb5acaf"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "typescript(no-deprecated)",
+    "message": "`FormEvent` is deprecated. FormEvent doesn't actually exist.\nYou probably meant to use , , , or just  instead\ndepending on the event type.",
+    "source": "024e51afd93a693d7c11d186e6bb0cac03d00e97dceac777e8dcf8a2ae4462a2"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "typescript(no-base-to-string)",
+    "message": "'values.get('orderNumber') ?? ''' may use Object's default stringification format ('[object Object]') when stringified.",
+    "source": "e898d311df2cd972a27c899744077998601b5ae643338e4fbf6d2580c8be0b12"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "typescript(no-base-to-string)",
+    "message": "'values.get('counterparty') ?? ''' may use Object's default stringification format ('[object Object]') when stringified.",
+    "source": "0bf77037a7e6d50af7728cdbe1af2f70abd878d471a688333501f4f096991190"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "typescript(no-base-to-string)",
+    "message": "'values.get('description') ?? ''' may use Object's default stringification format ('[object Object]') when stringified.",
+    "source": "be38250f48bf123a0bfeea973c200801dcc98c9fa6f3bf2ae6893ec23bad429b"
+  },
+  {
+    "filename": "app/page.tsx",
+    "code": "typescript(no-deprecated)",
+    "message": "`FormEvent` is deprecated. FormEvent doesn't actually exist.\nYou probably meant to use , , , or just  instead\ndepending on the event type.",
+    "source": "6118ab5d4df136e87265cc9ddfdef9248614112c075565ec856778a287c2bfdf"
+  },
+  {
+    "filename": "modules/orders/server/editing.test.mjs",
+    "code": "typescript(no-useless-default-assignment)",
+    "message": "Default value is useless because the parameter has type `{}` (not nullish). This default assignment will never be used.",
+    "source": "66ab76cbb939c4cc028d4f9429c086c6e1d4f522fdbff0a7c1cb5033113995ce"
+  },
+  {
+    "filename": "modules/orders/server/editing.test.mjs",
+    "code": "typescript(no-useless-default-assignment)",
+    "message": "Default value is useless because the parameter has type `{}` (not nullish). This default assignment will never be used.",
+    "source": "66ab76cbb939c4cc028d4f9429c086c6e1d4f522fdbff0a7c1cb5033113995ce"
+  },
+  {
+    "filename": "modules/orders/server/editing.test.mjs",
+    "code": "typescript(no-useless-default-assignment)",
+    "message": "Default value is useless because the parameter has type `{}` (not nullish). This default assignment will never be used.",
+    "source": "66ab76cbb939c4cc028d4f9429c086c6e1d4f522fdbff0a7c1cb5033113995ce"
+  },
+  {
+    "filename": "modules/orders/server/media.mjs",
+    "code": "typescript(no-misused-spread)",
+    "message": "Using the spread operator on a string can mishandle special characters, because it produces Unicode code points, which will break complex characters (like emojis) into multiple parts.",
+    "source": "812423dd376a3bfc62dab142fb23903cb6ca7249c0865137581f2cd009af6165"
+  },
+  {
+    "filename": "modules/orders/server/orders.mjs",
+    "code": "typescript(no-base-to-string)",
+    "message": "'name' may use Object's default stringification format ('[object Object]') when stringified.",
+    "source": "b5188d6d834e7a23a74d858b1fad452c739fd35d701699c598f2e1948e1b44a7"
+  },
+  {
+    "filename": "modules/orders/server/orders.mjs",
+    "code": "typescript(restrict-template-expressions)",
+    "message": "Invalid type used in template literal expression.",
+    "source": "b5188d6d834e7a23a74d858b1fad452c739fd35d701699c598f2e1948e1b44a7"
+  },
+  {
+    "filename": "modules/orders/public/app.js",
+    "code": "typescript(no-floating-promises)",
+    "message": "Promises must be awaited, add void operator to ignore.",
+    "source": "e488bfd4b3b9e307cb96570748a50ee74620e09e4614a2e5d0f01c5eed250c49"
+  },
+  {
+    "filename": "modules/orders/public/app.js",
+    "code": "typescript(no-floating-promises)",
+    "message": "Promises must be awaited, add void operator to ignore.",
+    "source": "227d8b62e42d41177937db40e81f5634cafcb2fd2468a3dae2a75bddb482ab98"
+  },
+  {
+    "filename": "modules/orders/public/app.js",
+    "code": "typescript(no-floating-promises)",
+    "message": "Promises must be awaited, add void operator to ignore.",
+    "source": "234b317e5d6fd4a059b016d3078cfff1b244eecfdabece7f105337fc4af4e830"
+  }
+]

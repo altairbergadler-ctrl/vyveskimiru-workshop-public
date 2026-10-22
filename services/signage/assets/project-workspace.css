@@ -1,0 +1,9 @@
+.project-workspace{max-width:1512px;margin:0 auto 18px;padding:14px 20px;background:#fff;border:1px solid #d8e1df;border-radius:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
+.project-workspace label{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;flex:1 1 260px;min-width:0}
+.project-workspace input{width:100%;min-width:0;margin:0;max-width:500px}
+.project-workspace-actions{display:flex;gap:8px;flex-wrap:wrap;min-width:0}
+.project-workspace button{font-size:12px;padding:9px 12px}
+.project-workspace p{width:100%;margin:0;font-size:12px;color:#53666a;overflow-wrap:anywhere}
+.project-workspace p.error{color:#a4411f}
+@media(max-width:1560px){.project-workspace{margin-left:24px;margin-right:24px}}
+@media(max-width:720px){.project-workspace{margin-left:12px;margin-right:12px;padding:12px;gap:10px}.project-workspace label{flex-basis:100%}.project-workspace-actions{width:100%}.project-workspace button{min-height:40px}}

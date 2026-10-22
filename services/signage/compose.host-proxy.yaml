@@ -1,0 +1,48 @@
+name: signage-editor
+
+# Use instead of compose.yaml; the existing host proxy provides HTTPS.
+# Current password-only deployment also requires compose.password.yaml:
+# docker compose -f compose.host-proxy.yaml -f compose.password.yaml up -d --build
+# Without that overlay, authentication must be enforced by the reverse proxy.
+services:
+  app:
+    image: channel-letter-mockups:${APP_VERSION:-vps-1}
+    build:
+      context: .
+      args:
+        CODEX_VERSION: ${CODEX_VERSION:-0.162.0-alpha.2}
+    user: "10001:10001"
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 48m
+    environment:
+      EDITOR_HOST: 0.0.0.0
+      EDITOR_PORT: "8080"
+      EDITOR_OUTPUT: /data/jobs
+      EDITOR_PUBLIC_ORIGIN: https://${DOMAIN:?Set DOMAIN in .env}
+      CODEX_HOME: /home/app/.codex
+    volumes:
+      - data:/data
+      - codex_home:/home/app/.codex
+    ports:
+      - "127.0.0.1:18880:8080"
+    networks:
+      default:
+        aliases:
+          - signage-editor-app
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 2g
+    cpus: "1.5"
+    pids_limit: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  data:
+  codex_home:
