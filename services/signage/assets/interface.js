@@ -9,8 +9,8 @@
   // the initial request before readiness work can change that query parameter.
   const initialRestoreId = new URLSearchParams(location.search).get('restoreJob');
   const initialHistoryRestore = /^[a-zA-Z0-9_-]{16,80}$/.test(initialRestoreId || '');
-  let enabled = false, currentStep = '1', frame = 0, workspaceRequested = false;
-  let lastResult = false, resizePending = false;
+  let enabled = false, currentStep = '1', frame = 0;
+  let resizePending = false;
   const validMode = value => value === 'redesign';
   const validStep = value => /^[1-4]$/.test(String(value));
   const mode = () => 'redesign';
@@ -21,7 +21,7 @@
   // window capture, before it reaches the draft module. The control is also
   // disabled until restoration finishes.
   function guardEarlyInput(event) {
-    if (enabled || !event.target?.closest?.('[data-interface-step-button],#interfaceProductionToggle,#interfaceWorkspaceToggle')) return;
+    if (enabled || !event.target?.closest?.('[data-interface-step-button],#interfaceProductionToggle')) return;
     event.preventDefault(); event.stopImmediatePropagation();
   }
   window.addEventListener('pointerdown', guardEarlyInput, true);
@@ -39,7 +39,7 @@
   }
   function retainFocusedField() {
     const active = document.activeElement;
-    if (!active || !active.matches?.('input,textarea,select,button,a')) return;
+    if (!active || !active.matches?.('input,textarea,select')) return;
     for (let node = active.parentElement; node && node !== document.body; node = node.parentElement) {
       if (node.matches('[data-interface-panel],.interface-production-field,.workspace')) node.dataset.interfaceFocusRetained = '';
     }
@@ -51,14 +51,20 @@
   }
   function updateNavigation() {
     root.dataset.interfaceStep = currentStep;
+    updateWorkspace();
     stepButtons.forEach(button => {
       if (button.closest('#interfaceSteps') && button.dataset.interfaceStepButton === currentStep) button.setAttribute('aria-current', 'step');
       else button.removeAttribute('aria-current');
     });
   }
-  function setStep(value) {
+  function setStep(value, {fromControl = null} = {}) {
     if (!enabled || !validStep(value)) return false;
-    retainFocusedField(); currentStep = String(value); updateNavigation(); resizeView();
+    if (fromControl) {
+      // Keep keyboard focus on the selected step, outside the panel being hidden.
+      stepButtons.find(button => button.closest('#interfaceSteps') && button.dataset.interfaceStepButton === String(value))?.focus({preventScroll: true});
+      releaseRetainedFocus();
+    } else retainFocusedField();
+    currentStep = String(value); updateNavigation(); resizeView();
     return true;
   }
   function preferredMode() {
@@ -90,18 +96,10 @@
     return true;
   }
   function updateWorkspace() {
-    const result = !$('aiResult').hidden;
-    let action = '';
-    try {action = window.SignageEditor.draftSnapshot().interaction.action;} catch (_) {}
-    if (result && !lastResult && !action) workspaceRequested = false;
-    lastResult = result;
-    const showWorkspace = workspaceRequested || Boolean(action);
-    root.dataset.interfaceResult = String(result);
-    root.dataset.interfaceWorkspace = showWorkspace ? 'visible' : 'auto';
-    const button = $('interfaceWorkspaceToggle');
-    button.hidden = !result;
-    button.textContent = showWorkspace ? 'Скрыть рабочую фотографию' : 'Показать рабочую фотографию';
-    button.setAttribute('aria-expanded', String(showWorkspace));
+    const hasResult = !$('aiResult').hidden;
+    root.dataset.interfaceResult = String(hasResult);
+    root.dataset.interfaceWorkspace = currentStep === '4' ? 'hidden' : 'visible';
+    $('interfaceResultEmpty').hidden = hasResult;
   }
   function refresh() {
     frame = 0;
@@ -153,9 +151,9 @@
     root.dataset.interfaceHelpReady = 'false';
     root.dataset.interfaceProductionOpen = 'true';
     root.dataset.interfaceWorkspace = 'visible';
+    $('interfaceResultEmpty').hidden = true;
     stepButtons.forEach(button => {button.disabled = true;});
     if ($('interfaceProductionToggle')) $('interfaceProductionToggle').disabled = true;
-    if ($('interfaceWorkspaceToggle')) $('interfaceWorkspaceToggle').disabled = true;
     enabled = false;
   }
   async function initialize() {
@@ -174,13 +172,9 @@
       enabled = true;
       stepButtons.forEach(button => {button.disabled = false;});
       $('interfaceProductionToggle').disabled = false;
-      $('interfaceWorkspaceToggle').disabled = false;
       setProductionOpen(false);
-      stepButtons.forEach(button => button.addEventListener('click', () => setStep(button.dataset.interfaceStepButton)));
+      stepButtons.forEach(button => button.addEventListener('click', () => setStep(button.dataset.interfaceStepButton, {fromControl: button})));
       $('interfaceProductionToggle').addEventListener('click', () => setProductionOpen($('interfaceProduction').dataset.productionOpen !== 'true'));
-      $('interfaceWorkspaceToggle').addEventListener('click', () => {workspaceRequested = root.dataset.interfaceWorkspace !== 'visible'; updateWorkspace(); resizeView();});
-      // Existing click handlers still own each geometry action.
-      ['editRegion', 'useTarget'].forEach(id => $(id).addEventListener('click', () => {workspaceRequested = true; updateWorkspace(); resizeView();}));
       document.addEventListener('focusout', () => queueMicrotask(releaseRetainedFocus));
       document.addEventListener('focusin', event => {
         if (mode() !== 'redesign') return;

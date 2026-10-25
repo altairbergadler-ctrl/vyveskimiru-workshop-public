@@ -3,8 +3,8 @@
   'use strict';
   const $=id=>document.getElementById(id),P=window.SignageProducts,G=window.LetterGeometry;
   const section=$('letterComposition');if(!section||!P||!G)return;
-  const copy=value=>value===undefined?undefined:JSON.parse(JSON.stringify(value));
-  const maxObjects=20,maxLogoBytes=1024*1024,maxTextBytes=1024*1024,maxArtworkSide=4096,maxArtworkPixels=16000000;
+  const copy=P.copyData;
+  const maxObjects=20,maxTextBytes=1024*1024,maxArtworkSide=4096,maxArtworkPixels=16000000;
   const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
   const choices=new Map(),metricsCache=new Map(),logoChecks=new Map(),textArtworkChecks=new WeakMap();
   const fontLoads=new Map(),fontChoices=['PT Sans Narrow','Arial Narrow','Arial','Arial Black','Segoe UI','Georgia','Tahoma','Verdana','Times New Roman','Trebuchet MS','Impact'];
@@ -381,14 +381,23 @@
     placeNewObject(object);
     return object;
   }
-  function logoHeader(artwork){const info=P.artworkInfo(artwork);if(info.size_bytes>maxLogoBytes)throw new Error('Максимальный размер логотипа — 1 МиБ.');return info;}
+  function logoHeader(artwork){return P.logoArtworkInfo(artwork);}
   async function decodeLogo(artwork){
     const info=logoHeader(artwork);
     const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('Не удалось открыть PNG логотипа.'));img.src=artwork.data_url;});
     if(image.naturalWidth!==info.width_px||image.naturalHeight!==info.height_px)throw new Error('Размеры логотипа не соответствуют PNG.');
-    const canvas=document.createElement('canvas');canvas.width=info.width_px;canvas.height=info.height_px;const context=canvas.getContext('2d');context.drawImage(image,0,0);
-    const pixels=context.getImageData(0,0,canvas.width,canvas.height).data;let transparent=false,visible=false;
-    for(let at=3;at<pixels.length;at+=4){transparent||=pixels[at]<255;visible||=pixels[at]>0;if(transparent&&visible)break;}
+    // Check original pixels in tiles: a large source must not require a second
+    // full-resolution canvas/readback or hit the browser's canvas edge limit.
+    const canvas=document.createElement('canvas');canvas.width=Math.min(1024,info.width_px);canvas.height=Math.min(1024,info.height_px);
+    const context=canvas.getContext('2d',{willReadFrequently:true});let transparent=false,visible=false;
+    for(let y=0;y<info.height_px&&!(transparent&&visible);y+=canvas.height){
+      for(let x=0;x<info.width_px&&!(transparent&&visible);x+=canvas.width){
+        const width=Math.min(canvas.width,info.width_px-x),height=Math.min(canvas.height,info.height_px-y);
+        context.clearRect(0,0,canvas.width,canvas.height);context.drawImage(image,x,y,width,height,0,0,width,height);
+        const pixels=context.getImageData(0,0,width,height).data;
+        for(let at=3;at<pixels.length;at+=4){transparent||=pixels[at]<255;visible||=pixels[at]>0;if(transparent&&visible)break;}
+      }
+    }
     if(!transparent||!visible)throw new Error('Нужен PNG с видимым логотипом и прозрачным фоном.');return info;
   }
   function verifyRestoredLogos(epoch){
@@ -462,7 +471,6 @@
     const {epoch,targetId}=request;uploadMessage='Проверяем PNG…';uploadError=false;status();
     try{
       if(file.type!=='image/png'&&!/\.png$/i.test(file.name))throw new Error('Логотип должен быть PNG с прозрачным фоном.');
-      if(file.size>maxLogoBytes)throw new Error('Максимальный размер логотипа — 1 МиБ.');
       const raw=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Не удалось прочитать логотип.'));reader.readAsDataURL(file);});
       const encoded=String(raw).slice(String(raw).indexOf(',')+1),url=`data:image/png;base64,${encoded}`;
       let header;try{header=atob(encoded.slice(0,44));}catch{throw new Error('Не удалось прочитать PNG логотипа.');}

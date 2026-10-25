@@ -26,7 +26,7 @@ export function matchOrders(message, filename, orders) {
   }).filter(item => item.score > 0).sort((a, b) => b.score - a.score || String(a.orderId).localeCompare(String(b.orderId))).slice(0, 8);
 }
 
-export async function parseLayoutEmail(raw) {
+export async function parseLayoutEmail(raw, { includeMedia = false } = {}) {
   if (!Buffer.isBuffer(raw) || !raw.length || raw.length > MAX_EMAIL_BYTES) throw fail('MAIL_SIZE', 'Письмо должно быть не больше 96 МБ.', 413);
   let mail;
   try { mail = await simpleParser(raw, { skipHtmlToText: true, skipTextToHtml: true, skipImageLinks: true, skipTextLinks: true }); }
@@ -57,7 +57,10 @@ export async function parseLayoutEmail(raw) {
   const linked = diskLinks([mail.html || '', ...mail.attachments.filter(item => item.contentType === 'text/html').map(item => item.content.toString('utf8'))].join('\n'), mail.text);
   attachments.push(...linked.map((link, index) => ({ partId: String(51 + index), name: link.name, link, supported: true,
     note: 'Оригинал с Яндекс Диска. Получение и проверка выполняются автоматически.' })));
-  return { message, attachments };
+  return { message, attachments, ...(includeMedia ? { media: mail.attachments.map((item, index) => ({
+    partId: String(index + 1), name: String(item.filename || `Вложение ${index + 1}`).slice(0, 1000),
+    mime: item.contentType, size: item.content.length, bytes: item.content,
+  })) } : {}) };
 }
 
 export function previewLayoutEmail(parsed, orders) {

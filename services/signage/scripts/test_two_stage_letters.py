@@ -46,7 +46,7 @@ class TwoStageLetters(unittest.TestCase):
 
     def render(self, folder, prompt, canvas, guide, on_progress=None, *, reference_image_paths=None, transparent_background=False, **kwargs):
         self.calls.append({"folder": folder, "prompt": prompt, "references": list(reference_image_paths or []),
-                           "transparent": transparent_background})
+                           "transparent": transparent_background, "options": kwargs})
         for file in reference_image_paths or []:
             self.assertEqual(file.parent, folder)
             self.assertTrue(file.is_file())
@@ -71,29 +71,40 @@ class TwoStageLetters(unittest.TestCase):
         self.assertTrue(self.service.wait_for_workers(10))
         return self.service.public(body["request_id"])
 
-    def test_two_calls_order_exact_references_no_final_front_overlay_and_immutable_inputs(self):
+    def test_scene_edit_is_final_without_flat_compositing_and_inputs_stay_immutable(self):
         body = self.body()
         original = copy.deepcopy(body)
-        with mock.patch("letter_objects.compose_objects", side_effect=AssertionError("No final front overlay")):
+        with mock.patch("letter_objects.compose_objects", side_effect=AssertionError("Do not restore the old flat compositor")), \
+                mock.patch("exact_letter_installation.install", side_effect=AssertionError("Do not paste neutral faces after the scene edit")):
             job = self.submit(body)
         self.assertEqual(job["status"], "complete", job)
         self.assertEqual(body, original)
         self.assertEqual([call["transparent"] for call in self.calls], [True, False])
         self.assertEqual([path.name for path in self.calls[0]["references"]], ["product-guide.png", "object-001.png", "object-002.png"])
-        self.assertEqual([path.name for path in self.calls[1]["references"]], ["render-input.png", "layout-guide.png", "product-neutral.png", "product-guide.png"])
+        self.assertEqual([path.name for path in self.calls[1]["references"]],
+                         ["render-input.png", "scene-reference.png", "product-neutral.png", "product-guide.png"])
         self.assertIn("ONE common physical scale", self.calls[0]["prompt"])
-        self.assertIn("infer actual light direction", self.calls[1]["prompt"])
-        self.assertIn("NO flat front-artwork overlay", self.calls[1]["prompt"])
+        self.assertIn("manufactured channel letters", self.calls[0]["prompt"])
+        self.assertNotIn("FRONT SURFACE ATLAS", self.calls[0]["prompt"])
+        self.assertIn("Discard stage 1 studio lighting", self.calls[1]["prompt"])
+        self.assertIn("foreground tree branches, leaves, cables", self.calls[1]["prompt"])
+        self.assertTrue(self.calls[1]["options"]["preserve_placed_artwork"])
+        self.assertFalse(self.calls[1]["options"].get("background_only", False))
         audit = job["audit"]
         self.assertEqual(audit["engine"], "codex_two_stage")
         self.assertEqual(audit["ai_calls_this_job"], 2)
         self.assertTrue(audit["no_artwork_overlay_after_generation"])
+        self.assertFalse(audit["exact_front_geometry"])
+        self.assertTrue(audit["geometry_requires_visual_review"])
+        self.assertTrue(audit["installation_input"]["scene_aware_installation"])
         self.assertTrue(audit["manufacturing_input_unchanged"])
         self.assertFalse(audit["exact_artwork"])
         self.assertEqual(audit["changed_pixels_outside_edit_zone"], 0)
         folder = self.output / body["request_id"]
         with Image.open(folder / "render.png") as image:
-            self.assertEqual(image.getpixel((32, 62)), (44, 90, 120))
+            self.assertEqual(image.getpixel((32, 62)), (44, 90, 120), "New faces must not overwrite the scene renderer's pixels")
+        self.assertFalse((folder / "front-mask.png").exists())
+        self.assertFalse((folder / "installation-base.png").exists())
         saved = json.loads((folder / "project.json").read_text(encoding="utf-8"))
         raw_input = json.loads((folder / "input-project.json").read_text(encoding="utf-8"))
         self.assertEqual(raw_input, original["project"])
@@ -146,6 +157,45 @@ class TwoStageLetters(unittest.TestCase):
             job = self.submit(body)
             self.assertEqual(job["status"], "complete", job)
             self.assertEqual(len(self.calls) - before, 2)
+
+    def test_primary_edit_follows_current_placement_when_neutral_product_is_reused(self):
+        first = self.submit(self.body())
+        moved = self.body("two-stage-placement-moved-0002")
+        moved["project"]["products"][0]["params"]["objects"][0].update(x_cm=40, y_cm=70, rotation_deg=8)
+        second = self.submit(moved)
+        self.assertEqual(second["status"], "complete", second)
+        self.assertEqual(second["audit"]["product_stage"]["reused_from_job"], first["id"])
+        self.assertEqual(len(self.calls), 3)
+        targets = []
+        for job in (first, second):
+            folder = self.output / job["id"]
+            target = (folder / "stage-2/render-input.png").read_bytes()
+            self.assertEqual(target, (folder / "stage-2/layout-guide.png").read_bytes())
+            self.assertNotEqual(target, (folder / "stage-2/scene-reference.png").read_bytes())
+            self.assertEqual(job["audit"]["installation_input"]["edit_target_sha256"], hashlib.sha256(target).hexdigest())
+            targets.append(target)
+        self.assertNotEqual(*targets, "Movement/rotation must be present in the photograph being edited, including on a cache hit")
+        self.assertEqual((self.output / first["id"] / "stage-2/scene-reference.png").read_bytes(),
+                         (self.output / second["id"] / "stage-2/scene-reference.png").read_bytes())
+        self.assertIn("positions and perspective", self.calls[-1]["prompt"])
+        self.assertIn('"placement":', self.calls[-1]["prompt"])
+        self.assertNotIn("background_cleanup_only", self.calls[-1]["prompt"])
+
+    def test_previous_flat_atlas_cache_is_not_reused(self):
+        first = self.submit(self.body())
+        checkpoint = self.output / first["id"] / pipeline.CHECKPOINT
+        meta = json.loads(checkpoint.read_text(encoding="utf-8"))
+        # Version 2 rendered a front-only colour atlas. Its hashes can be intact
+        # while its appearance contract is unsuitable for scene-aware installation.
+        meta["version"] = 2
+        meta["physical_input"]["version"] = 2
+        meta["cache_key"] = hashlib.sha256(pipeline._json(meta["physical_input"]).encode("utf-8")).hexdigest()
+        checkpoint.write_text(json.dumps(meta), encoding="utf-8")
+        second = self.submit(self.body("two-stage-after-flat-atlas-0002"))
+        self.assertEqual(second["status"], "complete", second)
+        self.assertEqual(pipeline.VERSION, 3)
+        self.assertEqual(len(self.calls), 4)
+        self.assertIsNone(second["audit"]["product_stage"]["reused_from_job"])
 
     def test_body_height_metadata_and_both_prompts_preserve_screenshot_word_scale(self):
         body = independent_payload(screenshot_pair(), target=[[25, 50], [950, 50], [950, 250], [25, 250]],

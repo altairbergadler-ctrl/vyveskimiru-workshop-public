@@ -31,12 +31,13 @@ function server() {
     }};
 }
 let identity = 0;
-function page(api, {search = '', current = snapshot('Начало'), localRecord, photo = true} = {}) {
+function page(api, {search = '', current = snapshot('Начало'), localRecord, photo = true, startup} = {}) {
   const document = new Events(), window = new Events(), restorations = [], resultRestorations = [];
   const url = new URL('https://example.test/signs/calibrator.html' + search);
   window.location = url; window.history = {replaceState(_a, _b, next) {url.href = String(next);}};
   window.crypto = {randomUUID: () => 'project-qa-identity-' + String(++identity).padStart(12, '0')};
-  window.SignageDraft = {ready: Promise.resolve({restored: Boolean(localRecord), record: clone(localRecord)})};
+  const localSaves=[];
+  window.SignageDraft = {ready: startup?.promise||Promise.resolve({restored: Boolean(localRecord), record: clone(localRecord)}),flush:async()=>{localSaves.push(clone(controller.context()));}};
   window.confirm = () => true;
   let value = clone(current), hasPhoto = photo,generationState={version:1,jobId:null,view:'source',editRegion:null};
   const editor = {snapshot: () => ({hasPhoto}), draftSnapshot: () => clone(value), restoreDraft: async saved => {value = clone(saved); hasPhoto = Boolean(saved.photo); restorations.push(clone(saved));}};
@@ -44,7 +45,7 @@ function page(api, {search = '', current = snapshot('Начало'), localRecord
   const status = {textContent: '', classList: {toggle() {}}}, nameInput = {value: ''};
   const controller = createController({editor, generation, document, window, request: (...args) => api.request(...args), status, nameInput, delay: 60000});
   if (localRecord?.snapshot?.workspace) controller.restoreLocal(localRecord.snapshot.workspace);
-  return {controller, document, window, status, nameInput, restorations, resultRestorations, current: () => clone(value), edit(text) {value.project.products[0].params.text = text; value.ui.text.value = text; document.emit('input');}, editGeometry(placement){value.project.placement=clone(placement);value.project.products[0].placement=clone(placement);document.emit('signage:change');},selectResultView(view){generationState.view=view;document.emit('signage:resultchange');},resultState:()=>clone(generationState),setPhoto(enabled) {hasPhoto = enabled;}};
+  return {controller, document, window, status, nameInput, restorations, resultRestorations, localSaves,current: () => clone(value), edit(text) {value.project.products[0].params.text = text; value.ui.text.value = text; document.emit('input');}, editGeometry(placement){value.project.placement=clone(placement);value.project.products[0].placement=clone(placement);document.emit('signage:change');},selectResultView(view){generationState.view=view;document.emit('signage:resultchange');},setResultState(saved){generationState=clone(saved);},resultState:()=>clone(generationState),setPhoto(enabled) {hasPhoto = enabled;}};
 }
 async function main() {
   const api = server(), a = page(api, {search: '?newProject=1', photo: false});
@@ -137,6 +138,99 @@ async function main() {
   assert.equal(aliased.current().project.products[0].params.text, 'НЕСОХРАНЁННЫЕ ПРАВКИ ОБЪЕДИНЁННОГО');
   assert.equal(aliased.controller.context().id, projectId); assert.equal(aliased.controller.state().conflict, true);
   assert.equal(await aliased.controller.flush(), false); assert.equal(api.requests.filter(item => item.body).length, beforeAlias);
-  console.log('PASS: server workspace controller — partial atomic snapshot, unchanged-save dedupe, independent PCs, optimistic conflicts, explicit copies, serialized concurrent edits, offline stale draft protection, failed-restore lock, exact-variant comparison GET-only until real geometry edits with preserved comparison selection.');
+  await copyScenarios();
+  console.log('PASS: server workspace controller — partial atomic snapshot, unchanged-save dedupe, independent PCs, conflicts, serialized edits, offline recovery, read-only variant comparison, unsaved copies with independent ownership, duplicate/startup guards, variant-copy reload, in-flight edits and failed-copy Save retry.');
+}
+
+async function copyScenarios(){
+  const api=server(),original=page(api,{search:'?newProject=1'});
+  await original.controller.start();
+  const originalId=original.controller.context().id,originalSaved=clone(api.records.get(originalId));
+  original.edit('НЕСОХРАНЁННАЯ ВЕТКА');
+  original.editGeometry({center_px:[300,200],width_cm:140,height_cm:50});
+  original.nameInput.value='Автошкола · вариант';
+  const oldJob='original-generation-00001';
+  original.setResultState({version:1,jobId:oldJob,pendingJobId:oldJob,view:'guide',editRegion:[[1,2],[3,2],[3,4],[1,4]],photoMatchesResult:true,pendingPhotoMatches:true});
+  original.controller.recordJob(oldJob,originalId);
+  const current=original.current();
+  assert.equal(await original.controller.copy(),true);
+  const copyId=original.controller.context().id,record=api.records.get(copyId);
+  assert.notEqual(copyId,originalId);assert.equal(record.revision,1);
+  assert.equal(record.name,'Автошкола · вариант · копия');
+  assert.deepEqual(record.snapshot,current,'Copy must capture current unsaved form, placement, artwork, original photo and unfinished tool state');
+  assert.deepEqual(api.records.get(originalId),originalSaved,'Creating a copy must not save current edits over the original');
+  assert.equal(record.generation.view,'guide');assert.deepEqual(record.generation.editRegion,original.resultState().editRegion);
+  for(const key of ['jobId','pendingJobId'])assert.equal(record.generation[key],null,'Old project generation ownership cannot be copied');
+  assert.equal(record.generation.photoMatchesResult,false);assert.equal(record.generation.pendingPhotoMatches,false);
+  assert.equal(original.controller.context().sourceJobId,null);assert.equal(original.controller.context().foreignResult,true);
+  assert.equal(original.localSaves.at(-1).id,copyId,'Persist the new workspace identity into the local draft');
+  original.controller.recordJob(oldJob,originalId);
+  assert.equal(original.controller.context().sourceJobId,null,'A late original generation POST cannot reattach its job to the copy');
+  assert.equal(original.controller.context().foreignResult,true);
+  original.controller.recordJob('copy-generation-00000001',copyId);
+  assert.equal(original.controller.context().sourceJobId,'copy-generation-00000001','The new project may adopt its own generation');
+
+  const repeatApi=server(),repeat=page(repeatApi,{search:'?newProject=1'});await repeat.controller.start();
+  const repeatOriginal=repeat.controller.context().id,hold=deferred(),before=repeatApi.requests.filter(request=>request.body).length;
+  repeatApi.gate=hold;
+  const firstCopy=repeat.controller.copy(),secondCopy=repeat.controller.copy();
+  assert.equal(firstCopy,secondCopy,'Concurrent copy actions must share one operation');
+  await tick();assert.equal(repeat.controller.state().copying,true);
+  assert.equal(repeatApi.requests.filter(request=>request.body).length,before+1,'Rapid repeated clicks must create only one new project');
+  hold.resolve();assert.equal(await firstCopy,true);assert.equal(await secondCopy,true);
+  assert.notEqual(repeat.controller.context().id,repeatOriginal);assert.equal(repeatApi.records.size,2);assert.equal(repeat.controller.state().copying,false);
+
+  const waitApi=server(),waiting=page(waitApi,{search:'?newProject=1'});await waiting.controller.start();
+  const waitingId=waiting.controller.context().id,saveGate=deferred();waitApi.gate=saveGate;
+  waiting.edit('СОХРАНЯЮЩИЙСЯ СНИМОК');const saving=waiting.controller.flush();await tick();
+  const copyAfterSave=waiting.controller.copy();waiting.edit('ПРАВКА ВО ВРЕМЯ ОЖИДАНИЯ');await tick();
+  assert.equal(waiting.controller.context().id,waitingId,'Do not switch ownership while an original save is still pending');
+  saveGate.resolve();assert.equal(await saving,true);assert.equal(await copyAfterSave,true);
+  const waitingCopy=waiting.controller.context().id;
+  assert.notEqual(waitingCopy,waitingId);assert.equal(waitApi.records.get(waitingCopy).snapshot.project.products[0].params.text,'ПРАВКА ВО ВРЕМЯ ОЖИДАНИЯ');
+  assert.equal(waitApi.maxActive,1,'A copy and existing writes must remain serialized');
+
+  const removedApi=server(),removed=page(removedApi,{search:'?newProject=1'});await removed.controller.start();
+  const removedId=removed.controller.context().id,removedGate=deferred();removedApi.gate=removedGate;
+  removed.edit('СОХРАНЕНИЕ ПЕРЕД УДАЛЕНИЕМ ФОТО');const beforeRemovalSave=removed.controller.flush();await tick();
+  const copyWithoutPhoto=removed.controller.copy();removed.setPhoto(false);removedGate.resolve();await beforeRemovalSave;
+  assert.equal(await copyWithoutPhoto,false,'Removing the photo while a copy waits for a save must not report an unsaved copy as created');
+  assert.equal(removed.controller.context().id,removedId,'Failed copy prerequisites must retain the original identity');
+
+  const historical=page(api,{search:'?restoreJob='+oldJob,current:snapshot('ИСТОРИЧЕСКИЙ ВАРИАНТ')});await historical.controller.start();
+  historical.controller.beginRestore();historical.controller.adopt(originalSaved,oldJob);historical.controller.endRestore();
+  assert.equal(await historical.controller.copy(),true);
+  const historicalCopy=historical.controller.context().id;
+  assert.equal(historical.window.location.searchParams.has('restoreJob'),false);
+  assert.equal(historical.window.location.searchParams.has('newProject'),false);
+  assert.equal(historical.window.location.searchParams.get('restoreProject'),historicalCopy);
+  const reloaded=page(api,{search:historical.window.location.search});await reloaded.controller.start();
+  assert.equal(reloaded.controller.context().id,historicalCopy);
+  assert.equal(reloaded.current().project.products[0].params.text,'ИСТОРИЧЕСКИЙ ВАРИАНТ','Refreshing a copied historical variant must open the copy');
+  assert.deepEqual(api.records.get(originalId),originalSaved);
+
+  const failApi=server(),failed=page(failApi,{search:'?newProject=1'});await failed.controller.start();
+  const failedOriginal=failed.controller.context().id,failedOriginalSaved=clone(failApi.records.get(failedOriginal));
+  failed.edit('КОПИЯ БЕЗ СВЯЗИ');failApi.down=true;assert.equal(await failed.controller.copy(),false);
+  const failedCopy=failed.controller.context().id;
+  assert.notEqual(failedCopy,failedOriginal);assert.equal(failed.controller.state().dirty,true);assert.equal(failed.controller.state().copying,false);
+  assert.equal(failed.localSaves.at(-1).id,failedCopy);assert.equal(failed.localSaves.at(-1).pending,true);
+  assert.equal(failed.window.location.searchParams.get('restoreProject'),failedCopy);
+  assert.deepEqual(failApi.records.get(failedOriginal),failedOriginalSaved);
+  failApi.down=false;assert.equal(await failed.controller.flush(),true);
+  assert.equal(failed.controller.context().id,failedCopy,'Save retry must preserve the same copy identity');
+  assert.equal(failApi.records.get(failedCopy).snapshot.project.products[0].params.text,'КОПИЯ БЕЗ СВЯЗИ');assert.equal(failApi.records.size,2);
+
+  const earlyApi=server(),startup=deferred(),early=page(earlyApi,{search:'?restoreProject='+originalId,startup});
+  assert.equal(await early.controller.copy(),false);assert.equal(early.controller.context(),null);
+  const starting=early.controller.start();assert.equal(await early.controller.copy(),false);
+  assert.equal(earlyApi.requests.length,0,'Copy must not publish an unrelated snapshot before startup restoration');
+  startup.resolve({record:null});await starting;
+  assert.equal(early.controller.state().loading,true,'Missing explicit project remains locked');
+  assert.equal(await early.controller.copy(),false);assert.equal(earlyApi.requests.filter(request=>request.body).length,0);
+  const empty=page(earlyApi,{search:'?newProject=1',photo:false});await empty.controller.start();
+  const emptyId=empty.controller.context().id;
+  assert.equal(await empty.controller.copy(),false);assert.equal(empty.controller.context().id,emptyId);
+  assert.equal(earlyApi.requests.filter(request=>request.body).length,0,'An empty editor cannot report a saved copy');
 }
 main().catch(error => {console.error(error); process.exitCode = 1;});

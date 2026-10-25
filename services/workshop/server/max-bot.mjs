@@ -100,6 +100,24 @@ export class MaxBot {
     const actual = Buffer.from(secret), expected = Buffer.from(config.secret);
     return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
   }
+  observeSales(update, config) {
+    if (!this.observeMessage) return;
+    try {
+      if (update.update_type === 'message_removed') {
+        const chatId=String(update.chat_id), userId=String(update.user_id);
+        if (config.allowedChatIds?.map(String).includes(chatId)) this.observeMessage({removed:true,nativeId:update.message_id,kind:'chat',id:chatId,chatId,timestamp:update.timestamp});
+        else if (this.db.prepare('SELECT 1 FROM max_bot_users WHERE user_id=?').get(userId)) this.observeMessage({removed:true,nativeId:update.message_id,kind:'user',id:userId,chatId,timestamp:update.timestamp});
+        return;
+      }
+      const message=update.message;
+      if (!['message_created','message_edited'].includes(update.update_type) || message?.sender?.is_bot || !message?.body?.mid) return;
+      const kind=message.recipient?.chat_type==='dialog'?'user':message.recipient?.chat_type==='chat'?'chat':null;
+      const id=kind==='user'?message.sender?.user_id:message.recipient?.chat_id;
+      if (!kind || !Number.isSafeInteger(id)) return;
+      const allowed=kind==='chat'?config.allowedChatIds?.map(String).includes(String(id)):this.db.prepare('SELECT 1 FROM max_bot_users WHERE user_id=?').get(String(id));
+      if (allowed) this.observeMessage({message,kind,id:String(id),timestamp:update.timestamp,updateType:update.update_type});
+    } catch { console.error(JSON.stringify({event:'sales_observer_failed',source:'max'})); }
+  }
   async process(update) {
     const config = this.settings();
     if (!config) return;
@@ -107,6 +125,7 @@ export class MaxBot {
       this.db.prepare('INSERT OR REPLACE INTO max_bot_chats VALUES (?,?,?)').run(String(update.chat_id), update.update_type, new Date().toISOString());
       return;
     }
+    this.observeSales(update,config);
     const message = update.message;
     if (update.update_type !== 'message_created' || message?.sender?.is_bot) return;
     const kind = message?.recipient?.chat_type === 'dialog' ? 'user' : message?.recipient?.chat_type === 'chat' ? 'chat' : null;

@@ -289,3 +289,39 @@ test('Avito operator command defaults to disabled with safe output and no new da
   assert.equal(result.stderr, '');
   assert.deepEqual(JSON.parse(result.stdout), { ok: false, code: 'disabled', error: 'Подключение Авито выключено.', retryAfterSeconds: null });
 });
+
+
+test('explicit chat send reuses verified account and transport, sends once and validates payload before network',async t=>{
+  let writes=0;
+  const f=await fixture(t,(url,options)=>{
+    assert.equal(new URL(url).pathname,'/messenger/v1/accounts/1234/chats/synthetic-chat/messages');
+    assert.equal(options.method,'POST');assert.deepEqual(JSON.parse(options.body),{type:'text',message:{text:'Учебный ответ'}});writes++;
+    return Response.json({id:'synthetic-sent'});
+  });
+  await assert.rejects(()=>f.client.sendChatMessage({accountId:'1234',chatId:'../outside',text:'x'}),{code:'invalid'});
+  assert.equal(f.calls.length,0);
+  await assert.rejects(()=>f.client.sendChatMessage({accountId:'9999',chatId:'synthetic-chat',text:'Учебный ответ'}),{code:'account_mismatch'});
+  assert.equal(writes,0);
+  assert.deepEqual(await f.client.sendChatMessage({accountId:'1234',chatId:'synthetic-chat',text:'Учебный ответ'}),{id:'synthetic-sent'});
+  assert.equal(writes,1);
+});
+
+
+test('Avito voice files use a fixed account-scoped GET and existing quota; media parsing remains optional', async t => {
+  const f = await fixture(t, url => {
+    const u = new URL(url);
+    if (u.pathname.includes('/getVoiceFiles')) {
+      assert.equal(u.pathname, '/messenger/v1/accounts/1234/getVoiceFiles');
+      assert.equal(u.searchParams.get('voice_ids'), 'fictional-voice');
+      return Response.json({ voices_urls: { 'fictional-voice': 'https://files.avito.ru/voice' } });
+    }
+    return Response.json({ messages: [{ id: 'media-test', created: 1700000000, direction: 'in', type: 'voice', content: { voice: { voice_id: 'fictional-voice' } } }] });
+  });
+  const page = await f.client.conversationMessages({ chatId: 'fictional-chat', includeMedia: true });
+  assert.equal(page.messages[0].media[0].voiceId, 'fictional-voice');
+  assert.equal((await f.client.voiceFile({ voiceId: 'fictional-voice' })).accountId, '1234');
+  await assert.rejects(f.client.voiceFile({ voiceId: 'fictional-voice' }), { code: 'rate_limit' });
+  await assert.rejects(f.client.voiceFile({ voiceId: '../unsafe' }), { code: 'invalid' });
+  f.advance(2000);
+  assert.equal((await f.client.conversationMessages({ chatId: 'fictional-chat' })).messages[0].media, undefined);
+});

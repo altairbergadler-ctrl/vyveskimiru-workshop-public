@@ -90,6 +90,8 @@ assert.equal(report.placement.fits_target,false);
 assert.equal(report.measurements[0].length_cm,null);
 assert.ok(report.warnings.some(s=>s.includes('расхождение')));
 const svg=G.overlaySvg(project,report);
+assert.ok(svg.includes('id="signage-overlay-caption"'), 'Export retains its technical caption');
+assert.ok(!G.overlaySvg(project,report,'',{includeCaption:false}).includes('id="signage-overlay-caption"'), 'Interactive canvas can omit its duplicate caption');
 assert.ok(!svg.includes('<script>'));
 assert.ok(svg.includes('&lt;script&gt;'));
 const rulerSvg=G.overlaySvg(rulerProject,rulerReport,'data:image/png;base64,fixture');

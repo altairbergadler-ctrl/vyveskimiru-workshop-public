@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#234f40" />
+    <title>Рабочий стол продаж · Мастерская</title>
+    <link rel="stylesheet" href="/sales/styles.css?v=1" />
+  </head>
+  <body>
+    <div id="login" hidden>
+      <form id="login-form" class="login-card">
+        <div class="eyebrow">МАСТЕРСКАЯ</div>
+        <h1>Рабочий стол продаж</h1>
+        <p>Все обращения и следующие шаги — под рукой.</p>
+        <label
+          >PIN Мастерской<input
+            name="pin"
+            type="password"
+            inputmode="numeric"
+            autocomplete="current-password"
+            required /></label
+        ><button class="primary" type="submit">Войти</button>
+        <p id="login-error" role="alert"></p>
+        <a href="/">Вернуться в Мастерскую</a>
+      </form>
+    </div>
+    <div id="app" hidden>
+      <header class="top">
+        <div class="brand">
+          <div class="eyebrow">МАСТЕРСКАЯ / ПРОДАЖИ</div>
+          <h1>Рабочий стол</h1>
+        </div>
+        <label class="search"
+          ><span aria-hidden="true">⌕</span
+          ><input
+            id="search"
+            type="search"
+            placeholder="Поиск по обращениям"
+            aria-label="Поиск по обращениям" /></label
+        ><button id="new-note" class="primary">
+          ＋ <span>Новая записка</span></button
+        ><button
+          id="refresh"
+          class="icon-button"
+          aria-label="Обновить стол"
+          title="Обновить стол"
+        >
+          ↻
+        </button>
+      </header>
+      <div class="save-status">
+        <div id="pending" class="pending" hidden>
+          Сохранение не подтверждено.
+          <button id="retry-pending">Проверить сохранение</button>
+        </div>
+        <div id="drafts" hidden>
+          <button id="review-drafts">Черновики</button>
+        </div>
+      </div>
+      <div id="notice" class="notice" role="status" hidden>
+        <span id="notice-text"></span
+        ><button id="dismiss-notice" aria-label="Закрыть уведомление">×</button>
+      </div>
+      <div class="shell left-collapsed right-collapsed" id="shell">
+        <nav id="navigation" aria-label="Рабочие разделы">
+          <button
+            id="toggle-navigation"
+            aria-label="Развернуть меню"
+            title="Развернуть меню"
+            aria-expanded="false"
+          >
+            ☰
+          </button>
+          <button data-view="inbox">
+            <span class="nav-icon" aria-hidden="true">▱</span
+            ><span>Входящие</span><b id="inbox-count">0</b></button
+          ><button data-view="desk" class="active">
+            <span class="nav-icon" aria-hidden="true">⌂</span
+            ><span>Мой стол</span></button
+          ><button data-view="today">
+            <span class="nav-icon" aria-hidden="true">◷</span
+            ><span>Сегодня</span><b id="today-count">0</b></button
+          ><button data-view="team">
+            <span class="nav-icon" aria-hidden="true">♧</span
+            ><span>Команда</span>
+          </button>
+          <div class="nav-line"></div>
+          <div class="nav-title">МОИ ЗОНЫ</div>
+          <div id="zones-nav"></div>
+          <button id="add-zone" class="subtle">
+            ＋ <span>Добавить зону</span>
+          </button>
+          <div class="nav-line"></div>
+          <button data-view="archive">
+            <span class="nav-icon" aria-hidden="true">▣</span
+            ><span>Архив</span></button
+          ><button data-view="channels">
+            <span class="nav-icon" aria-hidden="true">⌁</span
+            ><span>Подключения</span></button
+          ><button data-view="settings">
+            <span class="nav-icon" aria-hidden="true">⚙</span
+            ><span>Настройки</span></button
+          ><a class="back" href="/">← Мастерская</a>
+          <p class="nav-foot">Записки общие.<br />Раскладка — ваша.</p>
+        </nav>
+        <main>
+          <div class="workspace-head">
+            <div id="view-heading">
+              <div class="eyebrow" id="view-kicker">
+                ПРОСТРАНСТВО ДЛЯ ВАШИХ ДЕЛ
+              </div>
+              <h2 id="view-title">Мой стол</h2>
+              <p id="view-subtitle">
+                Одно обращение — одна записка. Каждый следующий шаг на виду.
+              </p>
+            </div>
+            <div id="desk-controls" class="view-actions">
+              <button
+                id="toggle-newest"
+                aria-pressed="false"
+                title="Собирать записки сверху: от новых к старым"
+              >
+                Новые сверху
+              </button>
+              <button id="toggle-list" title="Переключить стол и список">
+                ☷ Список</button
+              ><button id="arrange" title="Вернуть записки в видимую область">
+                Собрать записки</button
+              ><button id="zoom-out" aria-label="Уменьшить">−</button
+              ><span id="zoom-label">100%</span
+              ><button id="zoom-in" aria-label="Увеличить">＋</button>
+            </div>
+          </div>
+          <div id="filters">
+            <select id="owner-filter" aria-label="Ответственный">
+              <option value="">Все ответственные</option></select
+            ><select id="status-filter" aria-label="Статус обращения">
+              <option value="">Все состояния</option>
+              <option value="archived">В архиве</option>
+              <option value="merged">Объединено</option></select
+            ><label
+              ><input id="unread-filter" type="checkbox" /> Непрочитанные</label
+            ><span id="result-count"></span>
+          </div>
+          <div
+            id="trash-strip"
+            class="trash-strip"
+            aria-label="Корзина: перетащите карточку сюда"
+          >
+            <button id="open-trash" title="Открыть корзину">
+              <svg
+                width="15"
+                height="16"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path d="M3 5h14M7 5V2h6v3M5 5l1 13h8l1-13M8 8v7m4-7v7" />
+              </svg>
+              Корзина<span id="trash-count"></span>
+            </button>
+            <span class="trash-hint">Перетащите карточку сюда</span>
+            <span id="trash-undo" hidden
+              >Карточка в корзине
+              <button id="undo-trash">Отменить</button></span
+            >
+          </div>
+          <section id="content" aria-label="Обращения"></section>
+        </main>
+        <aside id="today-panel">
+          <button
+            id="toggle-today"
+            aria-label="Развернуть Сегодня"
+            title="Развернуть Сегодня"
+            aria-expanded="false"
+          >
+            ◷
+          </button>
+          <div class="aside-head">
+            <span class="calendar">▦</span>
+            <div>
+              <h2>Сегодня</h2>
+              <p id="today-date"></p>
+            </div>
+          </div>
+          <div id="today-list"></div>
+          <div class="aside-foot">Карточки с контрольной датой ожидания.</div>
+        </aside>
+      </div>
+    </div>
+    <dialog id="detail">
+      <div class="dialog-top">
+        <div class="eyebrow">ОБРАЩЕНИЕ</div>
+        <button
+          id="close-detail"
+          class="icon-button"
+          aria-label="Закрыть детали"
+        >
+          ×
+        </button>
+      </div>
+      <div id="detail-body"></div>
+    </dialog>
+    <dialog id="editor">
+      <div class="dialog-top">
+        <h2 id="editor-title"></h2>
+        <button
+          id="close-editor"
+          class="icon-button"
+          aria-label="Закрыть форму"
+        >
+          ×
+        </button>
+      </div>
+      <form id="editor-form"></form>
+      <p id="editor-error" class="error" role="alert"></p>
+    </dialog>
+    <dialog id="source-dialog">
+      <div class="dialog-top">
+        <h2 id="source-title">Источник</h2>
+        <button
+          id="close-source"
+          class="icon-button"
+          aria-label="Закрыть источник"
+        >
+          ×
+        </button>
+      </div>
+      <div id="source-body"></div>
+    </dialog>
+    <script type="module" src="/sales/app.js?v=1"></script>
+  </body>
+</html>

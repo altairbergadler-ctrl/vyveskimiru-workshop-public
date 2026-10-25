@@ -93,3 +93,15 @@ test('natural order clarifications go to assistant, exact order command remains 
   await f.bot.process(dm('Заказ 12: клиент утвердил белую подсветку','note'));assert.equal(queued.length,1);assert.equal(f.reads(),0);
   await f.bot.process(dm('заказ 12','card'));assert.equal(f.reads(),1);assert.equal(queued.length,1);
 });
+
+
+test('MAX sales observer accepts authorized attachments edits and removals independently of commands, and cannot break replies',async t=>{
+ const f=fixture(t),seen=[];f.bot.observeMessage=value=>seen.push(value);
+ const attachment=event(null,'attachment');attachment.message.body.attachments=[{type:'image'}];await f.bot.process(attachment);
+ await f.bot.process({...event('изменено','attachment'),update_type:'message_edited'});
+ await f.bot.process(event('я'.repeat(4000),'long-message'));
+ await f.bot.process({update_type:'message_removed',message_id:'attachment',chat_id:-10,user_id:7,timestamp:123});
+ await f.bot.process(event(null,'forbidden',-20));
+ assert.equal(seen.length,4);assert.equal(seen.at(-1).removed,true);assert.equal(f.sent.length,0);
+ f.bot.observeMessage=()=>{throw new Error('sales failure');};await f.bot.process(event('/orders','command-after-failure'));assert.equal(f.sent.length,1);
+});

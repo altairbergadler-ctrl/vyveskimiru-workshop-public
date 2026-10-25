@@ -79,7 +79,7 @@ function page(script, href, prefix, storage = new Map(), auth = {accepted: true}
       LetterGeometry: {quad() {}, inside: () => true}}
   };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../assets', script), 'utf8'), context, {filename: script});
-  return {element, requests, storageWrites, storage, navigations};
+  return {element, requests, storageWrites, storage, navigations, generation:context.window.SignageGeneration};
 }
 async function settle() { for (let i = 0; i < 4; i++) await new Promise(resolve => setImmediate(resolve)); }
 async function checkGeneration(prefix, pageName) {
@@ -247,14 +247,14 @@ async function checkExpiredSession(prefix, script) {
   const auth = {accepted: true}, storage = new Map();
   const app = page(script, 'https://example.test' + prefix + (script === 'generation.js' ? 'calibrator.html' : 'history.html'), prefix, storage, auth);
   await settle();
-  const button = script === 'generation.js' ? 'checkConnection' : 'refreshHistory';
+  const reconnect = () => script === 'generation.js' ? app.generation.checkConnection() : app.element('refreshHistory').onclick();
   auth.accepted = false;
-  await app.element(button).onclick();
+  await reconnect();
   await settle();
   assert.equal(app.element('authExpiredNotice').hidden, false);
   assert.deepEqual(app.navigations, [], 'Expired login must not discard unsaved photo and dimensions');
   auth.accepted = true;
-  await app.element(button).onclick();
+  await reconnect();
   await settle();
   assert.equal(app.element('authExpiredNotice').hidden, true);
   if (script === 'generation.js') assert.equal(app.element('generate').disabled, false);

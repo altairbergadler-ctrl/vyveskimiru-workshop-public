@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const assets = path.resolve(__dirname, '../assets');
-const jobs = new Map(), requests = [];
+const jobs = new Map(), projects = new Map(), requests = [];
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1ioAAAAASUVORK5CYII=', 'base64');
 const csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'self' signage-corel:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'";
 const postCount = () => requests.filter(r => r.method === 'POST' && r.path === '/signs/api/jobs').length;
@@ -34,11 +34,25 @@ const server = http.createServer(async (req, res) => {
     if (endpoint === 'api/config') return send({provider: 'codex', configured: true, composite_configured: true,
       token: 'fixture-token', connection_message: 'Локальный тестовый сервер. Реальные запросы ИИ отключены.'});
     if (endpoint === 'api/history') return send({items: [], total: 0});
+    // This presentation fixture exercises the empty history page; listing and
+    // search are covered by the real project-store browser suite.
+    if (endpoint === 'api/projects') return send({items: [], total: 0});
+    const projectMatch = /^api\/projects\/([a-zA-Z0-9_-]{16,96})$/.exec(endpoint);
+    if (projectMatch) {
+      const id = projectMatch[1], previous = projects.get(id);
+      if (method === 'POST') {
+        const payload = await body(req);
+        if (payload.base_revision !== (previous?.revision || 0)) return send({error: 'Project revision conflict'}, undefined, 409);
+        const record = {id, name: payload.name, revision: (previous?.revision || 0) + 1, snapshot: payload.snapshot, generation: payload.generation};
+        projects.set(id, record); return send(record);
+      }
+      if (method === 'GET') return previous ? send(previous) : send({error: 'Project not found'}, undefined, 404);
+    }
     if (endpoint === 'api/jobs' && method === 'POST') {
       const payload = await body(req);
       if (jobs.has(payload.request_id)) return send({error: 'Regression: repeated POST for an existing fixture job'}, undefined, 409);
       const photo = /^data:image\/png;base64,/.test(payload.photo || '') ? Buffer.from(payload.photo.split(',')[1], 'base64') : png;
-      const job = {id: payload.request_id, status: 'running', lighting: payload.project.generation.lighting,
+      const job = {id: payload.request_id, project_id: payload.project_id, status: 'running', lighting: payload.project.generation.lighting,
         project: payload.project, photo, created: Date.now() / 1000};
       jobs.set(job.id, job); return send({id: job.id, status: job.status});
     }
@@ -49,7 +63,7 @@ const server = http.createServer(async (req, res) => {
       // All three artifacts are the original source in this transport fixture.
       // Their dimensions match the project; this does not test image rendering.
       if (match[2]) return send(job.photo, 'image/png');
-      return send({id: job.id, status: job.status, lighting: job.lighting, created: job.created,
+      return send({id: job.id, project_id: job.project_id, status: job.status, lighting: job.lighting, created: job.created,
         message: job.status === 'running' ? 'Локальное тестовое задание выполняется. ИИ не вызывался.' : 'Тестовое задание завершено.',
         audit: {canvas_size_px: [job.project.image.width_px, job.project.image.height_px], changed_pixels_outside_edit_zone: 0, exact_artwork: true}});
     }
@@ -220,7 +234,10 @@ async function browserRegression() {
     // Incomplete calibration and temporarily invalid input are useful work,
     // even when they cannot produce a valid export or generation.
     await page.click(stepButton(2));
-    await page.selectOption('#calibrationMode', 'frontoparallel'); await page.check('#frontal'); await page.click('#reference');
+    await page.selectOption('#calibrationMode', 'frontoparallel');
+    assert.equal(await page.locator('#frontal').count(), 0);
+    assert.equal(await page.evaluate(() => SignageEditor.snapshot().project.calibration.frontoparallel_assumed), true);
+    await page.click('#reference');
     const image = await page.locator('#image').boundingBox();
     await page.mouse.click(image.x + image.width * .3, image.y + image.height * .3);
     await page.click(stepButton(3));
@@ -251,7 +268,12 @@ async function browserRegression() {
     // all keep the same ID. The only POST below is the explicit generate click.
     await page.evaluate(() => {SignageEditor.setPlacement({center_px: [594, 294], width_cm: 120, height_cm: 25, rotation_deg: 0}); SignageEditor.render();});
     await page.click(stepButton(4));
-    await page.waitForFunction(() => !document.getElementById('generate').disabled);
+    await page.waitForFunction(() => !document.getElementById('generate').disabled).catch(async error => {
+      console.error(await page.evaluate(() => ({reason: document.getElementById('generationReady').textContent,
+        warning: document.getElementById('warnings').textContent, calibration: SignageEditor.snapshot().project.calibration,
+        generation: SignageGeneration.draftState()})));
+      throw error;
+    });
     const beforePost = postCount(); await page.click('#generate');
     await page.waitForFunction(() => SignageGeneration.draftState().pendingJobId);
     const pending = await page.evaluate(() => SignageGeneration.draftState().pendingJobId);

@@ -124,7 +124,8 @@ async function testActualEditorRestore() {
     calibration: {mode: 'frontoparallel', frontoparallel_assumed: true, length_cm: 200, image_points: [[100,100],[500,100]]},
     placement: null, sign: {text: 'ЦВЕТЫ'}, measurements: [], checks: []};
   await app.editor.restoreProject(project, 'data:image/png;base64,fixture');
-  app.element('zoomActual').click(); app.element('measure').click(); app.pointEvent('click', [600,400]);
+  harness.fire(app.viewport, 'wheel', {deltaY: -100, deltaMode: 0});
+  app.element('measure').click(); app.pointEvent('click', [600,400]);
   app.element('referenceLength').value = '0'; harness.fire(app.element('referenceLength'), 'input');
   const saved = copy(app.editor.draftSnapshot());
   assert.equal(app.editor.snapshot().report, null, 'Unfinished invalid calibration must still be saved');
@@ -133,7 +134,7 @@ async function testActualEditorRestore() {
   assert.equal(restored.element('referenceLength').value, '0');
   assert.equal(restored.editor.snapshot().report, null);
   assert.deepEqual(copy(restored.editor.snapshot().project.ruler.image_points), [[600,400]]);
-  assert.equal(restored.element('zoomLevel').textContent, '100%');
+  assert.deepEqual(copy(restored.editor.draftSnapshot().view), saved.view, 'Draft restores zoom and position without the retired zoom buttons');
   assert.equal(restored.element('measure').getAttribute('aria-pressed'), 'true');
   const before = copy(restored.editor.draftSnapshot());
   assert.equal(await restored.editor.restoreDraft(saved, {shouldApply: () => false}), false);

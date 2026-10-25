@@ -15,6 +15,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/server ./server
 COPY --from=build /app/modules/orders ./modules/orders
+COPY --from=build /app/modules/sales ./modules/sales
 RUN mkdir -p /data && chown -R node:node /app /data
 USER node
 EXPOSE 3000

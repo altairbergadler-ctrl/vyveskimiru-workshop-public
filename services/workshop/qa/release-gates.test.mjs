@@ -84,6 +84,11 @@ test('backup gate rejects missing, stale, wrong-release and corrupted backups', 
     fs.copyFileSync(path.join(directory, 'finance.sqlite3'), path.join(directory, 'analytics.sqlite3'));
     fs.appendFileSync(path.join(directory, 'SHA256SUMS'), '\n' + crypto.createHash('sha256').update(fs.readFileSync(path.join(directory, 'analytics.sqlite3'))).digest('hex') + '  analytics.sqlite3');
     assert.equal(run('deploy/check-backup.py', [directory, release]), 0);
+    fs.appendFileSync(path.join(directory, 'COMPLETE'), 'sales=present\n');
+    assert.notEqual(run('deploy/check-backup.py', [directory, release]), 0);
+    fs.copyFileSync(path.join(directory, 'finance.sqlite3'), path.join(directory, 'sales.sqlite3'));
+    fs.appendFileSync(path.join(directory, 'SHA256SUMS'), '\n' + crypto.createHash('sha256').update(fs.readFileSync(path.join(directory, 'sales.sqlite3'))).digest('hex') + '  sales.sqlite3');
+    assert.equal(run('deploy/check-backup.py', [directory, release]), 0);
     fs.appendFileSync(path.join(directory, 'files.tar.gz'), 'corruption'); assert.notEqual(run('deploy/check-backup.py', [directory, release]), 0);
   } finally { removeDirectory(directory); }
 });

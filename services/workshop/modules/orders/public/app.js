@@ -1539,7 +1539,7 @@ function scheduleSessionRenewal() {
     });
   }, 0);
 }
-async function openClientCreator(parentEditor) {
+async function openClientCreator(parentEditor, proposedName = '') {
   let descriptor;
   try { descriptor = await api('/clients/new'); }
   catch (error) {
@@ -1557,7 +1557,7 @@ async function openClientCreator(parentEditor) {
     title: 'Новый клиент',
     subtitle: 'После сохранения клиент будет выбран в текущем заказе. Контакты можно изменить позже из карточки заказа.',
     fields: mapClientCreationFields(descriptor),
-    values: submitted || {},
+    values: submitted || {name:proposedName},
     mode: 'create',
     pendingCreation: Boolean(submitted),
     eyebrow: 'СОЗДАНИЕ КЛИЕНТА',
@@ -1607,6 +1607,17 @@ async function openClientCreator(parentEditor) {
     },
   });
 }
+async function readSalesOrderPrefill(noteId,summaryId) {
+  const response=await fetch('/api/sales/order-draft?noteId='+encodeURIComponent(noteId)+'&summaryId='+encodeURIComponent(summaryId||''));
+  const value=await response.json();
+  if(!response.ok)throw Object.assign(new Error(value.error || 'Не удалось получить данные карточки.'),{creationSafeFailure:true});
+  return value;
+}
+async function salesPositionRequestId(noteId,index) {
+  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('sales-position:'+noteId+':'+index));
+  const h=[...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');
+  return h.slice(0,8)+'-'+h.slice(8,12)+'-5'+h.slice(13,16)+'-8'+h.slice(17,20)+'-'+h.slice(20,32);
+}
 async function createOrder() {
   if (!state.authenticated || state.editing || state.pending || state.mediaBusy || state.dragId !== null) return;
   if (!state.board) { showToast('Дождитесь загрузки доски и повторите попытку.', { error: true }); return; }
@@ -1617,14 +1628,29 @@ async function createOrder() {
   trigger.setAttribute('aria-busy', 'true');
   try {
     const [descriptor,catalog] = await Promise.all([api('/orders/new'),api('/configurator')]);
+    const salesParams = new URLSearchParams(location.search);
+    const salesNoteId = pendingOrderCreation ? pendingOrderCreation.salesNoteId || null : salesParams.get('salesNote');
+    let salesPrefill = null, proposedClient='';
+    if (salesNoteId && !pendingOrderCreation) {
+      salesPrefill=await readSalesOrderPrefill(salesNoteId,salesParams.get('salesSummary'));
+      proposedClient=salesPrefill.values.client;
+      const clients=descriptor.fields.find(f=>(f.id||f.key)==='client')?.options || [];
+      const matches=clients.filter(option=>(typeof option==='string'?option:option.value)===salesPrefill.values.client);
+      if(matches.length!==1) {
+        const proposed=salesPrefill.values.client;
+        salesPrefill.values.client='';
+        if(proposed) salesPrefill.warning+=' Клиент из переписки: '+proposed+'. Выберите существующего или создайте нового.';
+      }
+    }
+
     let configurator;
     let positions = pendingOrderCreation?.positions || null;
     let createdId = pendingOrderCreation?.createdId || null;
     let completed = pendingOrderCreation?.completed || 0;
-    let configDraft = pendingOrderCreation?.configDraft || null;
+    let configDraft = pendingOrderCreation?.configDraft || salesPrefill?.configDraft || null;
     let userComment = pendingOrderCreation?.userComment;
     if (!Array.isArray(descriptor.fields) || !descriptor.fields.length) throw new Error('Не удалось загрузить поля нового заказа. Обновите данные и повторите попытку.');
-    let requestId = pendingOrderCreation?.requestId || crypto.randomUUID();
+    let requestId = pendingOrderCreation?.requestId || salesPrefill?.requestId || crypto.randomUUID();
     let submitted = pendingOrderCreation?.changes || null;
     const sections = {
       title: { section: 'Заказ', sectionHint: 'Что делаем и когда приняли заказ.' },
@@ -1639,7 +1665,7 @@ async function createOrder() {
     };
     openRecordEditor({
       title: 'Новый заказ',
-      subtitle: `Заказ появится в столбце «${descriptor.initialStatus || 'Расчёт / КП'}». Детали заказа можно изменить после создания.`,
+      subtitle: salesPrefill?.warning || `Заказ появится в столбце «${descriptor.initialStatus || 'Расчёт / КП'}». Детали заказа можно изменить после создания.`,
       fields: descriptor.fields.map((field) => {
         const key = field.id || field.key;
         return {
@@ -1659,11 +1685,11 @@ async function createOrder() {
           ...sections[key],
           ...(!submitted && key === 'client' ? {
             actionLabel: pendingClientCreation ? 'Проверить клиента' : '+ Создать нового клиента',
-            action: openClientCreator,
+            action: parent => openClientCreator(parent,proposedClient),
           } : {}),
         };
       }),
-      values: submitted ? {...submitted,comment:userComment??submitted.comment} : {},
+      values: submitted ? {...submitted,comment:userComment??submitted.comment} : salesPrefill?.values || {},
       enhance:({controls,changed})=>{
         const host=document.createElement('section');host.className='record-config-section';
         controls.get('comment').group.closest('.record-section').before(host);
@@ -1678,13 +1704,17 @@ async function createOrder() {
       submitLabel: 'Создать заказ',
       submit: async (_changes, all) => {
         if(!submitted){
-          positions=configurator.positions().map(position=>({requestId:crypto.randomUUID(),position}));
+          if(salesNoteId && !requestId) {
+            try { requestId=(await readSalesOrderPrefill(salesNoteId,'')).requestId; }
+            catch(error) { error.creationSafeFailure=true;throw error; }
+          }
+          positions=await Promise.all(configurator.positions().map(async(position,index)=>({requestId:salesNoteId ? await salesPositionRequestId(salesNoteId,index) : crypto.randomUUID(),position})));
           configDraft=configurator.state();userComment=all.comment||'';
           const comment=userComment;
           if(comment.length>12000)throw Object.assign(new Error('Описание заказа слишком длинное. Сократите дополнительные варианты или разделите заказ.'),{creationSafeFailure:true,status:422});
           submitted={...all,comment};
         }
-        const remember=()=>rememberOrderCreation({requestId,changes:submitted,positions,createdId,completed,configDraft,userComment});
+        const remember=()=>rememberOrderCreation({requestId,changes:submitted,positions,createdId,completed,configDraft,userComment,salesNoteId});
         remember();
         try {
           let result = createdId ? await api('/board?fresh=1') : await api('/orders', { method: 'POST', body: JSON.stringify({ requestId, changes: submitted }) });
@@ -1695,13 +1725,22 @@ async function createOrder() {
             result=await api(`/orders/${encodeURIComponent(createdId)}/positions`,{method:'POST',body:JSON.stringify(positions[completed])});
             validBoard(result);if(!result.createdPosition)throw new Error('Позиция пока не подтверждена. Проверьте создание повторно.');completed++;remember();
           }
+          let transferred;
+          if(salesNoteId) {
+            do {
+              const response=await fetch('/api/sales/order-files',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({noteId:salesNoteId,orderId:String(createdId)})});
+              transferred=await response.json();
+              if(!response.ok) throw new Error(transferred.error || 'Не удалось перенести файлы. Повторите проверку создания.');
+              showToast(`Заказ №${createdId}: переносим файлы, ${transferred.processed} из ${transferred.total}`);
+            } while(!transferred.done);
+          }
           rememberOrderCreation(null);
-          return {...result,createdOrderId:createdId};
+          return {...result,createdOrderId:createdId,salesFileWarnings:transferred?.unavailable || 0,salesFilePending:transferred?.pending || 0};
         } catch (error) {
           const sessionExpired = error.status === 401;
           if (!createdId && (ORDER_CREATION_SAFE_ERRORS.has(error.code) || sessionExpired)) {
             submitted = null;
-            requestId = crypto.randomUUID();
+            requestId = salesNoteId ? null : crypto.randomUUID();
             rememberOrderCreation(null);
             error.creationSafeFailure = true;
             if (sessionExpired) {
@@ -1729,7 +1768,7 @@ async function createOrder() {
         const card = $('board').querySelector(`[data-order-id="${CSS.escape(String(board.createdOrderId))}"]`);
         card?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         openDialog(board.createdOrderId);
-        showToast(`Заказ ${displayId(board.createdOrderId)} создан в таблице`);
+        showToast(`Заказ ${displayId(board.createdOrderId)} создан в таблице`+(board.salesFileWarnings ? ` · Вложений, недоступных у источника: ${board.salesFileWarnings}. Они отмечены в карточке.` : '')+(board.salesFilePending ? ` · Часть файлов ещё не перенесена. Продолжить можно в карточке рабочего стола.` : ''));
       },
       onClose: () => { state.editing = false; trigger.disabled = false; },
     });

@@ -268,7 +268,15 @@ async function main() {
   assert.equal(whole.editor.snapshot().project.facade.snap_grid,true);
   const viewport=whole.element('imageViewport'),pointerAt=(type,[x,y],extra={})=>whole.event(viewport,type,{clientX:100+x/2,clientY:50+y/2,pointerId:7,buttons:type==='pointerup'?0:1,...extra});
   const centerPhoto=()=>clone(whole.editor.snapshot().project.placement.center_px),widthBefore=whole.editor.snapshot().project.placement.width_cm;
-  pointerAt('pointerdown',centerPhoto());pointerAt('pointermove',[524,262]);pointerAt('pointerup',[524,262]);
+  let dragChanges=0,viewChanges=0;
+  whole.document.addEventListener('signage:change',()=>dragChanges++);
+  whole.document.addEventListener('signage:viewchange',()=>viewChanges++);
+  pointerAt('pointerdown',centerPhoto());pointerAt('pointermove',[524,262]);
+  assert.equal(dragChanges,0,'Pointer movement updates the preview without serializing a full autosave');
+  near(centerPhoto()[0],520,'The geometry must be current before release');
+  pointerAt('pointerup',[524,262]);
+  assert.equal(dragChanges,1,'Release commits the final geometry exactly once');
+  assert.equal(viewChanges,0,'Object movement must not reconfigure the photo viewport');
   near(centerPhoto()[0],520);near(whole.editor.snapshot().report.placement.center_cm[0],210);
   assert.equal(whole.editor.snapshot().project.placement.width_cm,widthBefore,'Whole-product attraction preserves physical width');
   pointerAt('pointerdown',centerPhoto());pointerAt('pointermove',[524,262],{altKey:true});pointerAt('pointerup',[524,262],{altKey:true});near(centerPhoto()[0],524);
@@ -278,8 +286,22 @@ async function main() {
   whole.element('signWidth').value='60';whole.event(whole.element('signWidth'),'input');whole.element('rotation').value='12';whole.event(whole.element('rotation'),'input');
   const resized=whole.editor.snapshot();assert.equal(resized.project.placement.width_cm,60);assert.equal(resized.project.placement.rotation_deg,12);assert.ok(resized.report.placement.boundary_px.length>4);
   for(let i=0;i<4;i++){const back=whole.window.LetterGeometry.apply(resized.report.calibration.imageToWorld,resized.report.placement.polygon_px[i]);near(back[0],resized.report.placement.corners_cm[i][0]);near(back[1],resized.report.placement.corners_cm[i][1]);}
+  for(const finish of ['pointercancel','lostpointercapture','blur','pagehide','visibilitychange']){
+    const before=dragChanges,start=centerPhoto();
+    pointerAt('pointerdown',start);pointerAt('pointermove',[start[0]-4,start[1]-4],{altKey:true});
+    const moved=centerPhoto();assert.notDeepEqual(moved,start);
+    assert.equal(dragChanges,before,finish+' must not save intermediate pointer movement');
+    const end=()=>{
+      if(finish==='visibilitychange'){whole.document.hidden=true;whole.event(whole.document,finish);}
+      else if(['blur','pagehide'].includes(finish))whole.event(whole.window,finish);
+      else pointerAt(finish,moved);
+    };
+    end();end();whole.document.hidden=false;
+    assert.equal(dragChanges,before+1,finish+' commits exactly once, even when repeated');
+    assert.deepEqual(centerPhoto(),moved,finish+' preserves the final preview coordinates');
+  }
   console.log('PASS: shipped ruler UI — continuous points, scaled coordinates, hover/segment/total labels, nearest right-click removal, keyboard typing guards, mode persistence, independent calibration, clear/new photo, JSON restore and legacy compatibility.');
   console.log('PASS: shipped facade UI — explicit legacy opt-in, new-zone defaults, informational dimensions, lens points, prior calibration preservation, draft restore and no stale size fallback.');
-  console.log('PASS: shipped whole-product drag — facade grid, exact Alt bypass, physical bounds, boundary containment, resize/rotation and inverse projection.');
+  console.log('PASS: shipped whole-product drag — facade grid, exact Alt bypass, physical bounds, resize/rotation, inverse projection and one final commit on release/cancel/blur/page exit.');
 }
 main().catch(error => {console.error(error); process.exitCode = 1;});

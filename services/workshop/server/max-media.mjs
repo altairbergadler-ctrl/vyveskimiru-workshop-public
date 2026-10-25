@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import https from 'node:https';
+import { pipeline } from 'node:stream/promises';
 import tls from 'node:tls';
 import dns from 'node:dns/promises';
 import net from 'node:net';
@@ -25,13 +26,13 @@ export function publicMediaAddress(address) {
   }
   return net.isIP(address) === 6 && /^[23]/u.test(address) && !/^2001:db8:/iu.test(address);
 }
-export async function maxMediaRequest(config, value, { method = 'GET', bytes = null, contentType = null,
-  limit = RETOUCH_MAX_BYTES, signal, redirects = 0, lookup = dns.lookup, requestImpl = https.request } = {}) {
-  const url = maxMediaUrl(value), addresses = await lookup(url.hostname, { all: true });
+export async function sourceMediaRequest(config, value, { validateUrl, method = 'GET', bytes = null, contentType = null,
+  limit = RETOUCH_MAX_BYTES, destination = null, signal, redirects = 0, lookup = dns.lookup, requestImpl = https.request } = {}) {
+  const url = validateUrl(value), addresses = await lookup(url.hostname, { all: true });
   if (!addresses.length || addresses.some(item => !publicMediaAddress(item.address))) throw failure('MAX_MEDIA_ADDRESS');
   const address = addresses.find(item => item.family === 4) || addresses[0];
   const response = await new Promise((resolve, reject) => {
-    const request = requestImpl(url, { method, ca: [...tls.rootCertificates, fs.readFileSync(config.caFile)], signal,
+    const request = requestImpl(url, { method, ca: config?.caFile ? [...tls.rootCertificates, fs.readFileSync(config.caFile)] : undefined, signal,
       lookup: (_, options, callback) => options?.all ? callback(null, [address]) : callback(null, address.address, address.family),
       headers: bytes ? { 'Content-Type': contentType, 'Content-Length': bytes.length } : {} }, incoming => {
       // Even rejected/redirected responses can emit a late connection error.
@@ -42,11 +43,13 @@ export async function maxMediaRequest(config, value, { method = 'GET', bytes = n
       if (incoming.statusCode !== 200 || Number(incoming.headers['content-length']) > limit) {
         incoming.destroy(); reject(failure('MAX_MEDIA_READ')); return;
       }
+      if (destination) { pipeline(incoming,fs.createWriteStream(destination,{flags:'wx',mode:0o600})).then(()=>resolve({path:destination}),()=>reject(failure('MAX_MEDIA_READ')));return; }
       const chunks = []; let size = 0;
       incoming.on('data', chunk => { size += chunk.length; if (size > limit) incoming.destroy(failure('MAX_MEDIA_SIZE')); else chunks.push(chunk); });
       incoming.on('end', () => resolve({ bytes: Buffer.concat(chunks) }));
     });
-    const timer = setTimeout(() => request.destroy(failure('MAX_MEDIA_TIMEOUT')), 30000);
+    const timer = destination ? null : setTimeout(() => request.destroy(failure('MAX_MEDIA_TIMEOUT')), 30000);
+    if(destination) request.setTimeout(60000,()=>request.destroy(failure('MAX_MEDIA_TIMEOUT')));
     request.on('close', () => clearTimeout(timer));
     request.on('error', () => reject(failure('MAX_MEDIA_READ')));
     request.end(bytes);
@@ -54,9 +57,12 @@ export async function maxMediaRequest(config, value, { method = 'GET', bytes = n
   if (response.redirect) {
     // Never forward an uploaded image to a redirected URL. Download redirects are revalidated.
     if (method !== 'GET' || redirects >= 3) throw failure('MAX_MEDIA_REDIRECT');
-    return maxMediaRequest(config, new URL(response.redirect, url).href, { method, signal, redirects: redirects + 1, limit, lookup, requestImpl });
+    return sourceMediaRequest(config, new URL(response.redirect, url).href, { validateUrl, method, signal, redirects: redirects + 1, limit, destination, lookup, requestImpl });
   }
-  return response.bytes;
+  return destination ? response : response.bytes;
+}
+export function maxMediaRequest(config, value, options = {}) {
+  return sourceMediaRequest(config, value, { ...options, validateUrl: maxMediaUrl });
 }
 export async function downloadMaxImage(config, url, options) {
   const bytes = await maxMediaRequest(config, url, options); imageType(bytes); return bytes;

@@ -1,5 +1,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { createReadStream, createWriteStream, renameSync } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import { Transform } from 'node:stream';
 import path from 'node:path';
 import { isCorelDocument, corelThumbnail } from './corel.mjs';
 import { validDocumentLayout } from './document-layout.mjs';
@@ -215,6 +218,10 @@ function safeName(input, contentType) {
   return `${[...stem].slice(0, 160).join('')}${suffix}`;
 }
 
+function attachmentName(input) {
+  if(typeof input!=='string' || input.length>1000) throw new MediaError('MEDIA_INVALID_NAME','Проверьте имя файла.');
+  return input.normalize('NFC').split(/[\\/]/u).at(-1).replace(/[\p{Cc}\p{Cf}<>:"|?*]/gu,'_').trim().replace(/[. ]+$/u,'').slice(0,200) || 'Вложение';
+}
 function orderKey(value) {
   if (typeof value !== 'string' || !value.trim() || value.length > 200 || /[\p{Cc}\p{Cf}]/u.test(value)) {
     throw new MediaError('MEDIA_INVALID_ORDER', 'Некорректный номер заказа.');
@@ -222,7 +229,7 @@ function orderKey(value) {
   return value.trim();
 }
 
-async function atomicWrite(target, bytes) {
+async function atomicWrite(target, bytes, beforeCommit) {
   const temporary = `${target}.${crypto.randomBytes(8).toString('hex')}.part`;
   let handle;
   try {
@@ -231,7 +238,8 @@ async function atomicWrite(target, bytes) {
     await handle.sync();
     await handle.close();
     handle = undefined;
-    await fs.rename(temporary, target);
+    if (beforeCommit) { beforeCommit(); renameSync(temporary, target); }
+    else await fs.rename(temporary, target);
     if (process.platform !== 'win32') {
       // Sync the containing directory where the filesystem supports directory fsync.
       let directory;
@@ -257,6 +265,8 @@ export class MediaStore {
     this.indexPath = path.join(this.directory, 'index.json');
     Object.assign(this, { maxFileBytes, maxOrderBytes, maxTotalBytes, maxFilesPerOrder, maxTotalFiles });
     this.state = { version: 1, records: [] };
+    this.attachments = [];
+    this.attachmentsPath = path.join(this.directory, 'attachments.json');
     this.totalBytes = 0;
     this.totalFiles = 0;
     this.ready = null;
@@ -316,6 +326,16 @@ export class MediaStore {
         }
         this.state = state;
       }
+      try {
+        const extra=JSON.parse(await fs.readFile(this.attachmentsPath,'utf8'));
+        if(extra.version!==1 || !Array.isArray(extra.records) || extra.records.length>10000) throw new Error('Invalid attachment index');
+        const keys=new Set(),ids=new Set(this.state.records.map(r=>r.id));
+        for(const r of extra.records) {
+          if(!ID.test(r.id) || ids.has(r.id) || r.kind!=='attachment' || r.contentType!=='application/octet-stream' || orderKey(r.orderId)!==r.orderId || attachmentName(r.name)!==r.name || !Number.isSafeInteger(r.size) || r.size<1 || !/^[a-f0-9]{64}$/.test(r.contentHash) || !/^[a-f0-9]{64}$/.test(r.salesSource?.key) || keys.has(r.salesSource.key) || typeof r.salesSource.noteId!=='string' || !Number.isFinite(Date.parse(r.createdAt)) || (r.deletedAt && !Number.isFinite(Date.parse(r.deletedAt)))) throw new Error('Invalid attachment');
+          ids.add(r.id);keys.add(r.salesSource.key);
+        }
+        this.attachments=extra.records;
+      } catch(error) {if(error.code!=='ENOENT') throw error;}
       let totalBytes = 0;
       let totalFiles = 0;
       // A bounded startup inventory accounts for tombstones and interrupted uploads.
@@ -342,6 +362,7 @@ export class MediaStore {
   dto(record) {
     const { id, orderId, name, contentType, size, kind, createdAt, width, height } = record;
     return { id, orderId, name, contentType, size, kind, createdAt, ...(record.source ? { source: { ...record.source } } : {}),
+      ...(record.salesSource ? {salesSource:{...record.salesSource}} : {}),
       ...(record.generatedDocument ? { generatedDocument:structuredClone(record.generatedDocument),contentHash:record.contentHash } : {}),
       ...(record.documentLayout ? {documentLayout:structuredClone(record.documentLayout)} : {}),
       ...(record.derivedFrom ? { derivedFrom: { ...record.derivedFrom } } : {}), ...(record.previewStatus ? { previewStatus: record.previewStatus } : {}),
@@ -349,7 +370,7 @@ export class MediaStore {
   }
 
   listing(orderId) {
-    const records = this.state.records.filter(record => record.orderId === orderId && !record.deletedAt);
+    const records = [...this.state.records,...this.attachments].filter(record => record.orderId === orderId && !record.deletedAt);
     return { items: records.map(record => this.dto(record)), coverId: records.find(record => record.cover)?.id || null };
   }
 
@@ -362,7 +383,7 @@ export class MediaStore {
 
   find(orderId, mediaId, includeDeleted = false) {
     if (typeof mediaId !== 'string' || !ID.test(mediaId)) throw new MediaError('MEDIA_NOT_FOUND', 'Файл не найден.', 404);
-    const record = this.state.records.find(value => value.id === mediaId && value.orderId === orderId && (includeDeleted || !value.deletedAt));
+    const record = [...this.state.records,...this.attachments].find(value => value.id === mediaId && value.orderId === orderId && (includeDeleted || !value.deletedAt));
     if (!record) throw new MediaError('MEDIA_NOT_FOUND', 'Файл не найден.', 404);
     return record;
   }
@@ -445,6 +466,58 @@ export class MediaStore {
     return this.dto(this.find(orderId, added.id, true));
   }
 
+  async attachment(orderId, key) {
+    await this.init();await this.writes;
+    const record=this.attachments.find(r=>r.orderId===orderId && r.salesSource.key===key);
+    return record ? {...this.dto(record),deleted:Boolean(record.deletedAt)} : null;
+  }
+  async persistAttachments(records, beforeCommit) {
+    await atomicWrite(this.attachmentsPath,Buffer.from(JSON.stringify({version:1,records})),beforeCommit);
+    this.attachments=records;
+  }
+  async addAttachment(orderId, {name, path:sourcePath, bytes, salesSource, validateSource}) {
+    orderId=orderKey(orderId);name=attachmentName(name);
+    if(!/^[a-f0-9]{64}$/.test(salesSource?.key) || typeof salesSource.noteId!=='string') throw new MediaError('MEDIA_SOURCE_INVALID','Некорректный источник файла.');
+    return this.mutate(async()=>{
+      const previous=this.attachments.find(r=>r.salesSource.key===salesSource.key);
+      if(previous) {
+        if(previous.orderId!==orderId) throw new MediaError('MEDIA_SOURCE_CONFLICT','Файл связан с другим заказом.',409);
+        return {...this.dto(previous),deleted:Boolean(previous.deletedAt)};
+      }
+      const assertSource=()=>{
+        if(validateSource && !validateSource()) throw new MediaError('MEDIA_SOURCE_CHANGED','Связь файла изменилась во время переноса.',409);
+      };
+      assertSource();
+      const admit=(size)=>{
+        if(this.totalBytes+size>this.maxTotalBytes || Math.max(this.totalFiles,this.state.records.length+this.attachments.length)>=this.maxTotalFiles)
+          throw new MediaError('MEDIA_STORAGE_QUOTA','В общем хранилище закончилось место для новых файлов.',507);
+      };
+      admit(sourcePath ? (await fs.stat(sourcePath)).size : bytes?.length || 0);
+      const id=crypto.randomBytes(16).toString('hex'),target=path.join(this.blobs,id+'.bin');
+      const hash=crypto.createHash('sha256');let size=0;
+      try {
+        if(sourcePath) await pipeline(createReadStream(sourcePath),new Transform({transform(chunk,_encoding,done){try{size+=chunk.length;admit(size);hash.update(chunk);done(null,chunk);}catch(error){done(error);}}}),createWriteStream(target,{flags:'wx',mode:0o600}));
+        else {if(!Buffer.isBuffer(bytes)) throw new Error('Missing file');size=bytes.length;hash.update(bytes);await atomicWrite(target,bytes);}
+        if(!size) throw new Error('Empty file');
+        const handle=await fs.open(target,'r+');try{await handle.sync();}finally{await handle.close();}
+        if(process.platform!=='win32') {const directory=await fs.open(this.blobs,'r');try{await directory.sync();}finally{await directory.close();}}
+        const record={id,orderId,name,contentType:'application/octet-stream',kind:'attachment',size,createdAt:new Date().toISOString(),contentHash:hash.digest('hex'),salesSource:{key:salesSource.key,noteId:salesSource.noteId}};
+        // Publish only while the current source link is valid. The final check and
+        // rename share one JS turn; no source mutation can interleave with them.
+        await this.persistAttachments([...this.attachments,record],assertSource);
+        this.totalBytes+=size;this.totalFiles++;
+        return this.dto(record);
+      } catch(error) {await fs.unlink(target).catch(()=>{});throw error;}
+    });
+  }
+  async open(orderId,mediaId) {
+    orderId=orderKey(orderId);await this.init();await this.writes;
+    return this.guard(async()=>{
+      const record=this.find(orderId,mediaId),target=path.join(this.blobs,record.id+'.bin'),stat=await fs.lstat(target);
+      if(!stat.isFile() || stat.isSymbolicLink() || stat.size!==record.size) throw new Error('Invalid stored file');
+      return {path:target,size:record.size,mime:record.contentType,name:record.name,media:this.dto(record)};
+    });
+  }
   async addGenerated(orderId,{name,bytes,generatedDocument,documentLayout}) {
     return this.add(orderId,{name,bytes,contentType:'application/pdf',generatedDocument,documentLayout});
   }
@@ -543,6 +616,10 @@ export class MediaStore {
     orderId = orderKey(orderId);
     return this.mutate(async () => {
       const record = this.find(orderId, mediaId, true);
+      if (!record.deletedAt && record.kind==='attachment') {
+        await this.persistAttachments(this.attachments.map(r=>r.id===record.id?{...r,deletedAt:new Date().toISOString()}:r));
+        return this.listing(orderId);
+      }
       if (!record.deletedAt) {
         const records = this.state.records.map(value => value.id === record.id || value.derivedFrom?.mediaId === record.id ? { ...value, cover: false, deletedAt: value.deletedAt || new Date().toISOString() } : value);
         await this.persist({ ...this.state, records });

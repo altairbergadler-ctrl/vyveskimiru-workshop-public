@@ -1,3 +1,7 @@
+import Database from 'better-sqlite3';
+import { SalesDesk } from './sales-desk.mjs';
+import { SalesSources } from './sales-sources.mjs';
+import { salesHandler, salesStatic } from './sales-routes.mjs';
 import fs from 'node:fs';
 import { validTransaction } from './finance-input.mjs';
 import http from 'node:http';
@@ -159,6 +163,32 @@ const autoAdServices = new AutoServices({base:avitoAnalytics,kind:'ad',enabled:n
 liveAnalytics.adServiceAutomation=autoAdServices;
 nightlyAttribution.services={bootstrap:async()=>{await autoAdServices.bootstrap();await autoServices.bootstrap();},run:async day=>{await autoAdServices.run(day);await autoServices.run(day);}};
 
+let salesDb, salesSources, salesApi;
+function startSales() {
+  if (salesApi) return;
+  let candidate;
+  try {
+    candidate = new Database(path.join(dataDir, 'sales.sqlite3'));
+    candidate.pragma('journal_mode = WAL');
+    candidate.pragma('busy_timeout = 5000');
+    const desk = new SalesDesk({db:candidate,filesDirectory:path.join(dataDir,'sales-files')});
+    const sources = new SalesSources({desk,avito,importer:inquiryImport,mail:mailWorker,max:maxBot,canRead:()=>!nightlyAttribution.flight});
+    const handler = salesHandler({desk,sources,json,body,secureCookie,mediaStore,creationDirectory:path.join(ordersData,'creation'),readOrders:()=>commands.read('sales-orders',()=>readBoard(ordersClient))});
+    salesDb=candidate; salesSources=sources; salesApi=handler;
+    avito.observeMessages = value => sources.observeSafely('avito',()=>sources.observeAvito(value));
+    maxBot.observeMessage = value => sources.observeSafely('max',()=>sources.observeMax(value));
+  } catch {
+    try { candidate?.close(); } catch { /* Isolated optional module. */ }
+    try {
+      db.exec('CREATE TABLE IF NOT EXISTS sales_intake_health(source TEXT PRIMARY KEY,data TEXT NOT NULL)');
+      for (const source of ['avito','max','mail']) db.prepare('INSERT INTO sales_intake_health VALUES(?,?) ON CONFLICT(source) DO UPDATE SET data=excluded.data').run(source,JSON.stringify({gapAt:new Date().toISOString()}));
+    } catch { /* Shared storage has its own health checks. */ }
+    console.error(JSON.stringify({event:'sales_unavailable',code:'SALES_STORAGE_UNAVAILABLE'}));
+  }
+}
+startSales();
+
+
 const mimeTypes = {
   '.apk': 'application/vnd.android.package-archive',
   '.css': 'text/css; charset=utf-8',
@@ -294,6 +324,7 @@ async function api(request, response, url) {
   }
 
   if (!currentSession(request)) return json(response, 401, { error: 'Требуется вход' });
+  if (url.pathname === '/api/sales' || url.pathname.startsWith('/api/sales/')) return salesApi ? salesApi(request,response,url) : json(response,503,{error:'Хранилище рабочего стола недоступно. Повторите позже; основные разделы работают.',code:'SALES_STORAGE_UNAVAILABLE'});
 
   if (['/api/analytics/live','/api/analytics/live/links','/api/analytics/live/attribution'].includes(url.pathname)) return liveAnalytics.handle(request,response,url,json,body);
 
@@ -489,9 +520,10 @@ const server = http.createServer(async (request, response) => {
       // in-flight result. Finance reads may assign technical UUIDs to manual rows.
       // MailWorker performs slow downloads before entering this same queue for
       // the final write. Wrapping resolve here would enqueue it inside itself.
-      if ((mutation && !stampOperation && url.pathname !== '/kanban/api/mail/resolve' && !isAvitoReadAction(url.pathname, request.method) && !['/api/analytics/inquiries/import','/api/analytics/avito','/api/analytics/avito/deep','/api/analytics/avito/deep/notes','/api/analytics/avito/deep/daily','/api/analytics/avito/deep/daily/cancel','/api/analytics/materials/page'].includes(url.pathname)) || url.pathname === '/kanban/api/board' || url.pathname.startsWith('/api/production-pilot')) return await commands.run(action, `${request.method} ${routeLabel(url.pathname)}`);
+      if ((mutation && !url.pathname.startsWith('/api/sales') && !stampOperation && url.pathname !== '/kanban/api/mail/resolve' && !isAvitoReadAction(url.pathname, request.method) && !['/api/analytics/inquiries/import','/api/analytics/avito','/api/analytics/avito/deep','/api/analytics/avito/deep/notes','/api/analytics/avito/deep/daily','/api/analytics/avito/deep/daily/cancel','/api/analytics/materials/page'].includes(url.pathname)) || url.pathname === '/kanban/api/board' || url.pathname.startsWith('/api/production-pilot')) return await commands.run(action, `${request.method} ${routeLabel(url.pathname)}`);
       return await action();
     }
+    if (salesStatic(response,url,root)) return;
     if (!staticFile(response, url.pathname)) json(response, 503, { error: 'Приложение не собрано' });
   } catch (error) {
     const safe = error instanceof FinanceError || error?.name === 'SheetsError';
@@ -531,6 +563,8 @@ async function checkModules() {
   }
   if (board) await maxNotifications.observeOrders(board);
   await maxNotifications.checkBalance();
+  startSales();
+  salesSources?.observeSafely('mail',()=>salesSources.observeMail());
 }
 void checkModules();
 const checkTimer = setInterval(checkModules, 5 * 60_000); checkTimer.unref();
@@ -549,5 +583,5 @@ for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => {
   avitoAnalytics.close();
   clearInterval(refreshTimer);
   clearInterval(checkTimer);
-  server.close(async () => { await mailWorker.stop(); await maxAssistant.close(); await commands.tail; db.close(); process.exit(0); });
+  server.close(async () => { await mailWorker.stop(); await maxAssistant.close(); await commands.tail; await salesSources?.close(); salesDb?.close(); db.close(); process.exit(0); });
 });

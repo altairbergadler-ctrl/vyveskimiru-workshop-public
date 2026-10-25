@@ -4,7 +4,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createOrder, orderCreationForm } from './creation.mjs';
+import { createOrder, orderCreationForm, orderCreationState } from './creation.mjs';
+import { salesOrderRequestId } from '../../../server/sales-order.mjs';
 
 const HEADERS = ['№ заказа', 'Название заказа', 'Дата заказа', 'Клиент', 'Сумма вручную', 'Себестоимость вручную', 'Менеджер', 'Статус', 'Желаемая дата клиента', 'Срок сдачи', 'Сумма заказа', 'Себестоимость', 'Доп. расходы', 'Валовая прибыль', 'Маржа, %', 'Оплачено', 'Долг', 'Дней до сдачи', 'Комментарий', 'сорт.', 'Фактическая дата готовности', 'Срок сдачи вручную'];
 const formulaColumns = [9, 10, 11, 12, 13, 14, 15, 16, 17, 19];
@@ -274,4 +275,28 @@ test('a known unsent contract refusal aborts the reservation without claiming a 
   const record = JSON.parse(fs.readFileSync(path.join(options.journalDir, `${input.requestId}.json`), 'utf8'));
   assert.equal(record.state, 'aborted');
   assert.deepEqual(client.raw, before);
+});
+
+
+test('sales draft advances only a durably aborted attempt and reuses its verified order after lost session', async t => {
+  const client=new Mock(),options=context(t),note='synthetic-sales-note';
+  const original=salesOrderRequestId(note,options),input={...payload(),requestId:original};
+  client.beforeMetadata=n=>{if(n===2)client.raw['Заказы'][2][1]='Concurrent human edit';};
+  await assert.rejects(createOrder(client,input,options),{code:'ORDER_CREATE_SOURCE_CHANGED'});
+  assert.equal(client.writes.length,0);assert.equal(orderCreationState(original,options),'aborted');
+  const next=salesOrderRequestId(note,options);assert.notEqual(next,original);
+  assert.equal(salesOrderRequestId(note,options),next);
+  const result=await createOrder(client,{...input,requestId:next},options);
+  assert.equal(salesOrderRequestId(note,options),next);
+  assert.deepEqual(await createOrder(client,{...input,requestId:salesOrderRequestId(note,options)},options),result);
+  assert.equal(client.writes.length,1);
+});
+
+test('sales draft never advances an ambiguous creation and receipt lookup rejects path traversal', async t => {
+  const client=new Mock(),options=context(t),note='synthetic-uncertain-note';client.noApply=true;
+  const requestId=salesOrderRequestId(note,options);
+  await assert.rejects(createOrder(client,{...payload(),requestId},options),{code:'ORDER_CREATE_UNCONFIRMED'});
+  assert.equal(orderCreationState(requestId,options),'reserved');
+  assert.equal(salesOrderRequestId(note,options),requestId);
+  assert.throws(()=>orderCreationState('../outside',options),{code:'INVALID_REQUEST_ID'});
 });

@@ -37,7 +37,7 @@ function page(){
       const canvas={width:0,height:0};let state={font:'',text:[],transform:null};
       const context={get font(){return state.font;},set font(value){state.font=value;},
         measureText:text=>metrics(state.font,text),setTransform:(...matrix)=>{state.transform=matrix;},
-        fillText:(text,x,y)=>state.text.push({text,x,y,font:state.font}),drawImage(){},getImageData:()=>({data:new Uint8ClampedArray([0,0,0,0,255,255,255,255])})};
+        fillText:(text,x,y)=>state.text.push({text,x,y,font:state.font}),clearRect(){},drawImage(){},getImageData:()=>({data:new Uint8ClampedArray([0,0,0,0,255,255,255,255])})};
       canvas.getContext=()=>context;
       canvas.toDataURL=()=>{const drawing={width:canvas.width,height:canvas.height,...clone(state)};drawings.push(drawing);return png(canvas.width,canvas.height,failLarge&&canvas.width>2300?'a'.repeat(2200000):JSON.stringify(drawing));};
       return canvas;

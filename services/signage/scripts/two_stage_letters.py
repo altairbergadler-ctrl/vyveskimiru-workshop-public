@@ -16,10 +16,13 @@ import shutil
 from PIL import Image
 
 import letter_objects
+import exact_letter_installation
 import product_render
 import facade_guide
 
-VERSION = 1
+# Version 2 cached front-surface atlases for a flat compositor. Those references
+# must never be reused as the manufactured product in the restored scene edit.
+VERSION = 3
 MAX_EDGE = 4096
 MAX_PIXELS = 20_000_000
 MAX_PNG_BYTES = 100_000_000
@@ -133,19 +136,34 @@ def product_guide(project, report):
     guide = Image.new("RGBA", (w, h))
     y = margin
     rows = []
-    raw_images = []
+    reference_images = []
     for obj, layout in zip(objects, layouts):
         art, raw = letter_objects._decode_object_artwork(obj)
         size = (max(1, round(layout["width_cm"] * scale)), max(1, round(layout["height_cm"] * scale)))
         xy = (round(margin * scale), round(y * scale))
         guide.alpha_composite(art.resize(size, Image.Resampling.LANCZOS), xy)
+        # The uploaded source remains unchanged in project.json. Only the AI
+        # viewing reference is bounded, just like the common product sheet;
+        # otherwise a large logo hits the bridge/photo decoder's pixel guard.
+        reference_size = art.size
+        reference_bytes = raw
+        if max(art.size) > MAX_EDGE:
+            ratio = MAX_EDGE / max(art.size)
+            reference_size = tuple(max(1, round(edge * ratio)) for edge in art.size)
+            with art.resize(reference_size, Image.Resampling.LANCZOS) as reference:
+                buffer = io.BytesIO()
+                reference.save(buffer, "PNG")
+                reference_bytes = buffer.getvalue()
         rows.append({"id": obj["id"], "type": obj["type"], "width_cm": layout["width_cm"],
                      "height_cm": layout["height_cm"], "box_px": [*xy, xy[0] + size[0], xy[1] + size[1]],
-                     "artwork_sha256": _sha(raw), "artwork_size_px": list(art.size)})
-        raw_images.append(raw)
+                     "artwork_sha256": _sha(raw), "artwork_size_px": list(art.size),
+                     "generation_reference_size_px": list(reference_size),
+                     "generation_reference_resampled": reference_size != art.size})
+        reference_images.append(reference_bytes)
+        art.close()
         y += layout["height_cm"] + gap
     return guide, {"pixels_per_cm": scale, "canvas_size_px": [w, h], "rows": rows,
-                   "artwork_transform": "uniform_physical_scale_raster_reference", "geometry_authority": "project_and_exact_source_artwork"}, raw_images
+                   "artwork_transform": "uniform_physical_scale_raster_reference", "geometry_authority": "project_and_exact_source_artwork"}, reference_images
 
 
 def layout_guide(base, project, report):
@@ -197,7 +215,7 @@ def find_cached(output, current_folder, key, guide_sha):
             if (not isinstance(meta, dict) or meta.get("version") != VERSION or meta.get("status") != "complete"
                     or meta.get("cache_key") != key or meta.get("product_guide_sha256") != guide_sha):
                 continue
-            source = _safe_file(folder, "project.json", 8 * 1024 * 1024).read_bytes()
+            source = _safe_file(folder, "project.json", product_render.MAX_PROJECT_BYTES).read_bytes()
             if _sha(source) != meta.get("source_project_sha256"):
                 continue
             physical = meta.get("physical_input")
@@ -239,10 +257,12 @@ def _stage1_prompt(inputs):
     return ("Use case: product-mockup / sketch-to-render. STAGE 1 of a two-stage signage visualization. "
             "Create ONE neutral photorealistic product reference sheet on a genuinely transparent background. "
             "Reference 1 is the authoritative exact front artwork sheet, with ONE common physical scale. "
-            "Additional references, if supplied, are original exact alpha silhouettes in sheet-row order. "
+            "Additional references, if supplied, are the source alpha silhouettes in sheet-row order, "
+            "uniformly downsampled only when needed for viewing. Original pixel sizes and hashes below "
+            "describe the preserved source artwork, not these viewing copies. "
             "Preserve every glyph shape, counters, spelling, diacritics, spacing and aspect ratio. Never redesign, "
             "retype, substitute fonts, add words, dimension labels, walls, floors, mounting panels or background rectangles. "
-            "Keep the sheet's row order and relative size. " + HEIGHT_PROMPT +
+            "Keep the sheet's row order, row positions and relative size. " + HEIGHT_PROMPT +
             "Render manufactured channel letters using the supplied construction profile "
             "(the approved default names acrylic faces and aluminium returns; any explicit profile overrides this default), "
             "using the supplied per-object dimensions, body depth and independent colors. Material grades, thicknesses, coating "
@@ -265,13 +285,18 @@ def _stage2_prompt(project, report, mode, quad, work_size, scale, physical):
     camera = facade_guide.geometry_cues(report, scale)
     return ("Use case: compositing / precise-object-edit. STAGE 2 of a TWO-generation signage visualization. "
             "Produce one believable ordinary photograph of these manufactured signs installed onto the original building. "
-            "Reference 1 is the PHOTO EDIT TARGET. Reference 2 is the exact editor PLACEMENT GUIDE with front artwork at the "
-            "correct pixel scale, positions and perspective. Reference 3 is the neutral product sheet from stage 1, used ONLY "
+            "Reference 1 is the PHOTO EDIT TARGET with the NEW sign fronts ALREADY placed at their final pixel scale, "
+            "positions and perspective. Edit these fronts IN PLACE into manufactured objects; their current footprints "
+            "are mandatory, not suggestions. Reference 2 is the original lit photograph WITHOUT the new fronts, used "
+            "to identify obsolete signs to remove, recover wall texture and preserve foreground occlusion. "
+            "Reference 3 is the neutral product sheet from stage 1, used ONLY "
             "for appearance and construction. Reference 4 is the authoritative exact front artwork sheet. The product sheet's "
-            "row arrangement is NOT the facade arrangement. Preserve reference 2 footprints, Cyrillic/other spelling, glyph "
+            "row arrangement is NOT the facade arrangement. Preserve reference 1 footprints, Cyrillic/other spelling, glyph "
             "silhouettes, counters, diacritics, spacing and aspect ratios. Never substitute a font, widen text, round off glyphs, "
-            "lose letters, add words or enlarge signs for legibility. " + HEIGHT_PROMPT +
-            "Convert the guide into real installed objects, no flat "
+            "lose letters, add words or enlarge signs for legibility. Never center a sign within the wall or editable zone, "
+            "move it to the position of old signage, shrink it for margins, or reinterpret its placement aesthetically. "
+            "The editable polygon permits background repair; it is NOT the sign's size or position. " + HEIGHT_PROMPT +
+            "Convert the already placed fronts into real installed objects, no flat "
             "overlay stickers. Discard stage 1 studio lighting: infer actual light direction, softness, exposure, highlights "
             "and reflections from the photographed scene; match the selected scene lighting. Render the face and returns "
             "using the supplied construction and independent colors. Use the explicit lighting "
@@ -280,9 +305,15 @@ def _stage2_prompt(project, report, mode, quad, work_size, scale, physical):
             "Daytime internal LEDs are OFF unless explicitly supplied ON, night LEDs ON through "
             "the acrylic faces unless explicit input requests halo. Do not make aluminium returns glow. Add contact occlusion "
             "and cast shadows consistent with the photographed light and physical depth, preserving the underlying wall texture. "
+            "Determine visible sidewalls from the actual camera and wall plane; do not simulate volume with a uniform "
+            "diagonal outline offset or a generic drop shadow. Preserve the original depth order from reference 2: "
+            "foreground tree branches, leaves, cables and other objects stay in their original positions IN FRONT of "
+            "the installed signs wherever they cross them. Reconstruct these same occluders over the new fronts if "
+            "the placement reference covers them; never erase them or paint letters over them. "
             "No giant extrusions, chromed faces, artificial bloom, cinematic grading or invented sun when the scene is overcast. "
             "Preserve the camera, framing, perspective, field of view, architecture, windows, doors, brick patterns, equipment "
-            "and ground. Change only the signs and necessary adjacent shadows/reflections inside the editable zone. No cleanup, "
+            "and ground. Remove obsolete signage and mounting marks only inside the editable zone, restoring the same wall. "
+            "Change only the new signs and their necessary adjacent shadows/reflections inside that zone. No unrelated cleanup, "
             "repainting, moving the camera, crop, stretch or rotation. Output the full reference-1 canvas as a photo, without "
             "collage, guide graphics, labels, divider, measurements or border. There will be NO flat front-artwork overlay "
             "after this generation. This visualization is not manufacturing geometry or measured optical simulation.\n" +
@@ -294,7 +325,7 @@ def _stage2_prompt(project, report, mode, quad, work_size, scale, physical):
 
 def run(folder, output, base, mask, project, report, mode, quad, renderer, model_inputs, normalize_generated, compose, progress):
     folder, output = Path(folder), Path(output)
-    exact, sheet_audit, originals = product_guide(project, report)
+    exact, sheet_audit, references = product_guide(project, report)
     guide_sha = _save(exact, folder / "product-guide.png")
     inputs = physical_inputs(project, report)
     inputs["sheet_rows"] = sheet_audit["rows"]
@@ -312,8 +343,8 @@ def run(folder, output, base, mask, project, report, mode, quad, renderer, model
     else:
         exact.save(stage1 / "product-guide.png")
         refs = [stage1 / "product-guide.png"]
-        if len(originals) <= 7:
-            for index, raw in enumerate(originals):
+        if len(references) <= 7:
+            for index, raw in enumerate(references):
                 path = stage1 / f"object-{index + 1:03}.png"
                 path.write_bytes(raw)
                 refs.append(path)
@@ -345,11 +376,14 @@ def run(folder, output, base, mask, project, report, mode, quad, renderer, model
     guide.paste(scaled, (0, 0))
     stage2 = folder / "stage-2"
     stage2.mkdir()
-    canvas.save(stage2 / "render-input.png")
+    # The geometry must be in the image being edited, not only in a secondary
+    # reference that the model can disregard while redesigning the empty wall.
+    guide.save(stage2 / "render-input.png")
+    canvas.save(stage2 / "scene-reference.png")
     guide.save(stage2 / "layout-guide.png")
     shutil.copyfile(folder / "product-neutral.png", stage2 / "product-neutral.png")
     shutil.copyfile(folder / "product-guide.png", stage2 / "product-guide.png")
-    refs = [stage2 / name for name in ("render-input.png", "layout-guide.png", "product-neutral.png", "product-guide.png")]
+    refs = [stage2 / name for name in ("render-input.png", "scene-reference.png", "product-neutral.png", "product-guide.png")]
     facade_reference, facade_geometry = facade_guide.reference_image(canvas, report, scale)
     if facade_reference is not None:
         facade_reference.save(folder / "facade-grid.png")
@@ -358,21 +392,32 @@ def run(folder, output, base, mask, project, report, mode, quad, renderer, model
     prompt2 = _stage2_prompt(project, report, mode, quad, work_size, scale, physical_inputs(project, report))
     (stage2 / "prompt.txt").write_text(prompt2, encoding="utf-8")
     progress("2/2 · Установка изделия на фотографию с её освещением…")
-    generated = renderer(stage2, prompt2, refs[0], refs[1],
+    generated = renderer(stage2, prompt2, refs[0], stage2 / "layout-guide.png",
                          on_progress=lambda message: progress("2/2 · Установка на фото: " + message),
-                         reference_image_paths=refs, transparent_background=False)
+                         reference_image_paths=refs, transparent_background=False, preserve_placed_artwork=True)
     raw_size = list(generated.size)
     generated, normalized = normalize_generated(generated, canvas.size)
     result, audit = compose(base, generated.convert("RGB"), mask, work_size, canvas.size)
     audit.update(engine="codex_two_stage", provider="codex_subscription_two_stage", model="Codex imagegen",
                  product=product_render.metadata(project), lighting=mode, geometry=geometry_summary(report), exact_artwork=False,
+                 exact_front_geometry=False, geometry_requires_visual_review=True,
                  exact_artwork_reference=True, no_artwork_overlay_after_generation=True,
                  manufacturing_source="input-project.json_and_project.json_and_production-spec.json_not_generated_images",
                  product_stage=checkpoint, product_guide=sheet_audit,
                  generated_raw_size_px=raw_size, generated_uniform_resolution_normalization=normalized,
+                 installation_input={"version": VERSION, "mode": "edit_already_placed_fronts",
+                     "scene_aware_installation": True,
+                     "edit_target_sha256": _sha(refs[0].read_bytes()),
+                     "scene_reference_sha256": _sha(refs[1].read_bytes())},
                  color_accuracy="approximate_not_colorimetrically_verified",
                  material_interpretation=physical_inputs(project, report)["material_interpretation"],
                  ai_calls_this_job=1 if cached else 2)
+    if project.get("generation", {}).get("photo_match"):
+        surface = exact_letter_installation.projected_front_interiors(base, result, mask, project, report)
+        surface.save(folder / "sign-surface-mask.png")
+        audit["photo_match_mask"] = {"source": "projected_source_front_interiors",
+                                    "generated_contour_segmentation": False,
+                                    "retained_source_pixels_excluded": True}
     if facade_geometry:
         audit["facade_grid_reference"] = {"image": "facade-grid.png", "geometry": facade_geometry, "reference_only": True}
     for stage, name in ((stage1, "product_image_transfer"), (stage2, "installation_image_transfer")):

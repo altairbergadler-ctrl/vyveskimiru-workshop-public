@@ -9,8 +9,7 @@
     ['Масштаб фотографии', '#interfaceScalePanel .interface-step-heading h2', '#interfaceScalePanel .interface-step-heading>p'],
     ['Масштаб по отрезку', '#referenceLength', '#frontFields>.hint'],
     ['Масштаб с перспективой', '#referenceWidth', '#rectangleFields>.hint'],
-    ['Изделие и каталог', '#productSection .interface-step-heading h2', '#productSection .interface-step-heading>p,#productFamilyNote,#productCoverageNote,#productSection>.hint:last-child'],
-    ['Готовый вариант', '#productTemplate', '#interfaceTemplateHint,#catalogSelectionNote'],
+    ['Вид изделия', '#productSection .interface-step-heading h2', '#productSection .interface-step-heading>p,#productFamilyNote,#productCoverageNote,#productSection>.hint:last-child'],
     ['Текст изделия', '#text', '#textHint'],
     ['Габарит изделия', '#signWidth', '#interfaceSizeHint'],
     ['Материалы и подсветка', '#faceMaterialType', '#filmMaterialFields>.hint,#filmColorHint'],
@@ -18,19 +17,17 @@
     ['Параметры для производства', '#brief', '#materialPriorityHint,.interface-production-note,#interfaceProductionToggle small'],
     ['Размещение изделия', '#rotation', '#placementHint'],
     ['Создание макета', '#interfaceResultPanel .interface-step-heading h2', '#interfaceResultPanel .interface-step-heading>p,#productGenerationNote,#generationReady'],
-    ['Освещение и геометрия', '#lighting', '#lightingHint,.geometry-lock>span'],
+    ['Освещение', '#lightingOptionsGroup legend', '#lightingHint'],
     ['Подготовка фона с ИИ', '#productAiBackground', '#backgroundAiHint'],
-    ['Зона замены', '#editRegion', '#interfaceResultPanel>.hint:not([id]),#editRegionState'],
-    ['Подключение ChatGPT', '#subscriptionSettings>b', '#subscriptionSettings>.hint'],
-    ['Работа с фотографией и линейкой', '.toolbar', '.view-controls>small,#rulerInfo>p,#instruction,#interfaceEmptyHint'],
+    ['Работа с фотографией и линейкой', '.toolbar', '#rulerInfo>p,#instruction,#interfaceEmptyHint'],
     ['Перспектива и границы установки', '#facadeControls', '#facadeHelp'],
     ['Точный макет PNG', '#artworkTitle', '#exactArtworkSection>.hint:not(#artworkStatus),#artworkStatus'],
     ['Экспорт в CorelDRAW', '#corelTitle', '#corelSection>.hint:not([id])'],
-    ['Цвета результата', '.result-specification>b', '.result-specification>.hint:not(#resultMaterial)'],
+    ['Параметры результата', '.result-specification h3', '.result-specification>.hint:not(#resultMaterial),#resultVerification,#productionSpecificationNote'],
     ['Просмотр результата', '.preview-actions', '.preview-actions>.hint'],
     ['Визуализация и техническая схема', '#status h2', '#footerNote']
   ];
-  const conditional = new Set(['generationReady', 'connectionMessage', 'artworkStatus', 'instruction', 'rulerReadout', 'editRegionState']);
+  const conditional = new Set(['generationReady', 'artworkStatus', 'instruction', 'rulerReadout']);
   let activeGroup = null, opener = null;
 
   function sourceText(source) {
@@ -56,13 +53,11 @@
     if (root.dataset.interface !== 'redesign') closeHelp();
     // Availability reasons, failures and running operations remain on screen.
     $('generationReady').toggleAttribute('data-interface-help-source', !$('generate').disabled);
-    $('connectionMessage').toggleAttribute('data-interface-help-source', $('connectionBadge').textContent.trim() === 'Codex подключён' && $('authExpiredNotice').hidden);
     $('artworkStatus').toggleAttribute('data-interface-help-source', !window.SignageProductUI?.active().artwork && !$('artworkStatus').classList.contains('product-error'));
     // Current point counts and the ruler-limit error are operational feedback.
     const instruction = $('instruction');
     instruction.toggleAttribute('data-interface-help-source', !/^Отмечено \d+ из \d+\.|^В линейке уже 256 точек\./.test(instruction.textContent));
     $('rulerReadout').toggleAttribute('data-interface-help-source', /^Добавьте ещё одну точку|^Нажимайте на фото/.test($('rulerReadout').textContent));
-    $('editRegionState').toggleAttribute('data-interface-help-source', /^Укажите (область|зону)/.test($('editRegionState').textContent));
     groups.forEach(group => {group.button.hidden = !contents(group).length;});
     if (dialog.open) renderHelp();
   }
@@ -120,7 +115,7 @@
     });
     const observer = new MutationObserver(refresh);
     new Set(groups.flatMap(group => group.sources)).forEach(source => observer.observe(source, {childList:true,subtree:true,attributes:true,attributeFilter:['hidden','class']}));
-    ['generate','connectionBadge','authExpiredNotice','productSection','lettersFields','plaqueFields','neonFields','exactArtworkSection','subscriptionSettings','rulerInfo'].forEach(id => observer.observe($(id), {childList:id === 'connectionBadge',attributes:true,attributeFilter:['hidden','disabled']}));
+    ['generate','authExpiredNotice','productSection','lettersFields','plaqueFields','neonFields','exactArtworkSection','rulerInfo'].forEach(id => observer.observe($(id), {attributes:true,attributeFilter:['hidden','disabled']}));
     observer.observe(root, {attributes:true,attributeFilter:['data-interface']});
     document.addEventListener('signage:change', refresh);
     root.dataset.interfaceHelpReady = 'true';

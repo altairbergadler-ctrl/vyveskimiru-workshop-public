@@ -466,12 +466,12 @@ class ObjectContract(unittest.TestCase):
             with self.subTest(alter=alter), self.assertRaises(products.ProductError):
                 letters.validate_objects(params, require_artwork=True)
 
-    def test_project_and_each_png_size_limits(self):
+    def test_project_and_generated_text_size_limits(self):
         params = project()["products"][0]["params"]
         params["extra"] = "x" * letters.MAX_OBJECTS_JSON_BYTES
-        with self.assertRaisesRegex(products.ProductError, "4 МиБ"):
+        with self.assertRaisesRegex(products.ProductError, "30 МиБ"):
             letters.validate_objects(params)
-        params = project([logo()])["products"][0]["params"]
+        params = project([text()])["products"][0]["params"]
         params["objects"][0]["artwork"]["data_url"] = "data:image/png;base64," + base64.b64encode(b"x" * (letters.MAX_OBJECT_ARTWORK_BYTES + 1)).decode()
         with self.assertRaisesRegex(products.ProductError, "1 МиБ"):
             letters.validate_objects(params)

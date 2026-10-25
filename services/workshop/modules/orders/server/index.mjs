@@ -1,3 +1,4 @@
+import { sendFile } from '../../../server/file-streams.mjs';
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -388,15 +389,8 @@ export function createRequestHandler({
           if (!exists) return json(res, 404, { error: 'Заказ не найден.' });
           if (!mediaId && req.method === 'GET') return json(res, 200, mediaResponse(id, await mediaStore.list(id)));
           if (mediaId && ['GET', 'HEAD'].includes(req.method)) {
-            const { bytes, media } = await mediaStore.read(id, mediaId);
-            const disposition = media.kind === 'image' && url.searchParams.get('download') !== '1' ? 'inline' : 'attachment';
-            const filename = encodeURIComponent(media.name).replaceAll("'", '%27');
-            res.writeHead(200, { ...headers, 'Content-Type': media.contentType,
-              'Content-Length': bytes.length,
-              'Content-Disposition': `${disposition}; filename="attachment"; filename*=UTF-8''${filename}`,
-              'Content-Security-Policy': "default-src 'none'; sandbox",
-            });
-            return res.end(req.method === 'HEAD' ? undefined : bytes);
+            const file=await mediaStore.open(id,mediaId);
+            return await sendFile(req,res,file,{inline:file.media.kind==='image' && url.searchParams.get('download')!=='1'});
           }
           if (!mediaId && req.method === 'POST') {
             let name;
@@ -443,6 +437,7 @@ export function createRequestHandler({
       }
       return json(res, 404, { error: 'Страница не найдена' });
     } catch (error) {
+      if(res.headersSent) {res.destroy();return;}
       const candidate = error.statusCode ?? error.status;
       const status = Number.isInteger(candidate) && candidate >= 400 && candidate < 600 ? candidate : 502;
       const safe = ['OrdersError', 'OrderError', 'SheetsError', 'FinanceError', 'RequestError', 'MediaError'].includes(error.name);

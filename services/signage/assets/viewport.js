@@ -12,11 +12,10 @@
     const snapshot = () => ({image: image ? {...image} : null, width, height, scale, x, y, fitScale, minScale, maxScale});
     function constrain() {
       if (!image) return;
-      // Keep a small part of the photograph reachable without fighting normal panning.
-      const marginX = Math.min(32, width / 2, image.width_px * scale / 2);
-      const marginY = Math.min(32, height / 2, image.height_px * scale / 2);
-      x = clamp(x, marginX - image.width_px * scale, width - marginX);
-      y = clamp(y, marginY - image.height_px * scale, height - marginY);
+      // Centre an image that fits; magnified images stop at their own edges.
+      const imageWidth = image.width_px * scale, imageHeight = image.height_px * scale;
+      x = imageWidth <= width ? (width - imageWidth) / 2 : clamp(x, width - imageWidth, 0);
+      y = imageHeight <= height ? (height - imageHeight) / 2 : clamp(y, height - imageHeight, 0);
     }
     function fit() {
       if (!image) return snapshot();
@@ -86,10 +85,10 @@
       stage.style.height = state.image ? `${state.image.height_px * state.scale}px` : '100%';
       stage.style.left = `${state.x}px`;
       stage.style.top = `${state.y}px`;
-      controls.zoomLevel.textContent = state.image ? `${Math.round(state.scale * 100)}%` : '—';
-      controls.zoomIn.disabled = !state.image || state.scale >= state.maxScale - 1e-9;
-      controls.zoomOut.disabled = !state.image || state.scale <= state.minScale + 1e-9;
-      controls.zoomFit.disabled = controls.zoomActual.disabled = !state.image;
+      if (controls.zoomLevel) controls.zoomLevel.textContent = state.image ? `${Math.round(state.scale * 100)}%` : '—';
+      if (controls.zoomIn) controls.zoomIn.disabled = !state.image || state.scale >= state.maxScale - 1e-9;
+      if (controls.zoomOut) controls.zoomOut.disabled = !state.image || state.scale <= state.minScale + 1e-9;
+      for (const control of [controls.zoomFit, controls.zoomActual]) if (control) control.disabled = !state.image;
       onChange(state);
       return state;
     }
@@ -141,10 +140,10 @@
     // Mousedown must also be cancelled to prevent the browser's native autoscroll.
     viewport.addEventListener('mousedown', event => {if (event.button === 1 && model.snapshot().image) event.preventDefault();});
     viewport.addEventListener('dragstart', event => event.preventDefault());
-    controls.zoomIn.onclick = () => {model.zoomBy(1.25); apply();};
-    controls.zoomOut.onclick = () => {model.zoomBy(1 / 1.25); apply();};
-    controls.zoomActual.onclick = () => {model.zoomAt(1); apply();};
-    controls.zoomFit.onclick = () => {model.fit(); apply();};
+    if (controls.zoomIn) controls.zoomIn.onclick = () => {model.zoomBy(1.25); apply();};
+    if (controls.zoomOut) controls.zoomOut.onclick = () => {model.zoomBy(1 / 1.25); apply();};
+    if (controls.zoomActual) controls.zoomActual.onclick = () => {model.zoomAt(1); apply();};
+    if (controls.zoomFit) controls.zoomFit.onclick = () => {model.fit(); apply();};
     return {
       configure(image, options) {if (options?.reset || !image) stopPan(); model.configure(image, viewport.clientWidth, viewport.clientHeight, options); return apply();},
       fit() {model.fit(); return apply();},

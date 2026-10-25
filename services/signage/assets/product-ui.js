@@ -2,7 +2,7 @@
    until the user explicitly replaces them; text mode renders genuine PNG pixels. */
 (() => {
   'use strict';
-  const P=window.SignageProducts,$=id=>document.getElementById(id),copy=value=>JSON.parse(JSON.stringify(value));
+  const P=window.SignageProducts,$=id=>document.getElementById(id),copy=P.copyData;
   const typeFields={plaque:{background_color:'plaqueBackground',material:'plaqueMaterial',thickness_mm:'plaqueThickness',corner_radius_mm:'plaqueRadius',mounting:'plaqueMounting',margin_mm:'plaqueMargin'},neon:{tubing_mm:'neonTubing',backing:'neonBacking',backing_margin_mm:'neonMargin',illumination:'neonIllumination'}};
     let active=P.createProduct('channel_letters'),drafts=Object.create(null),dimensions=Object.create(null),signature='',timer=null,uploadEpoch=0,restoring=false;
   const type=()=>active.type;
@@ -27,16 +27,6 @@
     }
     $('dynamicProductFields').replaceChildren(...nodes);$('dynamicProductFields').hidden=!nodes.length;
   }
-  function selectionNote(){const t=P.catalogue().find(t=>t.id===$('productTemplate').value);$('applyProductTemplate').disabled=!t;$('catalogSelectionNote').textContent=t?[t.description,t.coverage_note].filter(Boolean).join(' '):'Сохранённый вариант использует собственные параметры.';}
-  function catalogueOptions(preferred=active.template_id){
-    const query=$('catalogSearch').value.trim().toLocaleLowerCase('ru'),category=$('catalogCategory').value;
-    const all=P.catalogue(),matching=all.filter(t=>(!category||t.category===category)&&(!query||[t.label,t.description,t.category,t.id].filter(Boolean).join(' ').toLocaleLowerCase('ru').includes(query)));
-    $('productTemplate').replaceChildren(...matching.map(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.label+(t.category?' · '+t.category:'');return o;}));
-    if(!matching.length){const o=document.createElement('option');o.value='';o.textContent='Варианты не найдены';$('productTemplate').append(o);}
-    if(!all.some(t=>t.id===active.template_id)&&!query&&!category){const o=document.createElement('option');o.value=active.template_id;o.textContent=P.displayLabel(active)+' · сохранённый вариант';$('productTemplate').append(o);}
-    if([...$('productTemplate').options].some(o=>o.value===preferred))$('productTemplate').value=preferred;
-    $('catalogCount').textContent=`Найдено ${matching.length} из ${all.length} вариантов`;selectionNote();
-  }
   const formDimensions=()=>({width_cm:Number($('signWidth').value),height_cm:Number($('signHeight').value),rotation_deg:Number($('rotation').value)});
   const currentTemplate=()=>P.catalogue().find(t=>t.type===type()&&t.id===active.template_id)||P.catalogue().find(t=>t.type===type());
   function compose(base){
@@ -59,7 +49,6 @@
     $('productFontBold').checked=params.font_bold!==false;$('corelBold').checked=params.font_bold!==false;
     $('artworkSource').value=uploadOnly()||active.artwork?.source==='uploaded'?'uploaded':'text';$('artworkSource').disabled=uploadOnly();
     const savedCleanup=active.background_ai===true;$('productAiBackground').checked=savedCleanup;
-    catalogueOptions();
     if(freshLetters&&isLetters()&&window.SignageLetterUI?.restoreNew)window.SignageLetterUI.restoreNew(params);else window.SignageLetterUI?.restore(params);updateFields();showArtwork();
   }
   const generationFooter=()=>isLetters()?'Вне зоны замены сохраняются пиксели световой основы. Внутри зоны ИИ восстанавливает фон и добавляет буквы. Размеры и начертание сверяйте с технической схемой.':'Вне зоны замены сохраняются пиксели световой основы. Точный PNG изделия переносится с сохранением текста и пропорций. Макет предназначен для согласования внешнего вида; производственная геометрия из PNG не создаётся.';
@@ -133,9 +122,6 @@
     clearTimeout(timer);timer=setTimeout(async()=>{try{const before=active.artwork?.data_url;await prepareArtwork();if(before!==active.artwork?.data_url)window.SignageEditor?.render();}catch(error){artworkError(error.message);}},180);
   }
   $('productPicker').replaceChildren(...P.list().map(spec=>{const button=document.createElement('button');button.type='button';button.dataset.productType=spec.type;button.textContent=spec.label;button.setAttribute('aria-pressed',String(spec.type===type()));button.onclick=()=>switchType(spec.type);return button;}));
-  $('catalogCategory').replaceChildren(...['',...new Set(P.catalogue().map(t=>t.category).filter(Boolean))].map(category=>{const option=document.createElement('option');option.value=category;option.textContent=category||'Все категории';return option;}));
-  $('catalogSearch').oninput=()=>catalogueOptions();$('catalogCategory').onchange=()=>catalogueOptions();$('productTemplate').onchange=selectionNote;
-  $('applyProductTemplate').onclick=()=>{const template=P.catalogue().find(t=>t.id===$('productTemplate').value);if(!template)return;saveCurrent();const oldPlacement=active.placement,oldArtwork=active.artwork?.source==='uploaded'&&P.renderer(template.type)===family()?active.artwork:null,backgroundAI=active.background_ai;uploadEpoch++;active=P.createProduct(template.type,template.id);dimensions[type()]=copy(template.default_placement);if(oldArtwork)active.artwork=oldArtwork;active.background_ai=backgroundAI;if(oldPlacement)active.placement={...oldPlacement,...template.default_placement};signature='';populate(isLetters());window.SignageEditor?.setPlacement(active.placement);window.SignageEditor?.render();};
   $('dynamicProductFields').addEventListener('input',()=>window.SignageEditor?.render());$('dynamicProductFields').addEventListener('change',()=>window.SignageEditor?.render());
   $('productFontBold').onchange=()=>window.SignageEditor?.render();
   $('artworkSource').onchange=()=>{uploadEpoch++;signature='';if($('artworkSource').value==='text'&&active.artwork?.source==='uploaded')delete active.artwork;updateFields();showArtwork();window.SignageEditor?.render();};

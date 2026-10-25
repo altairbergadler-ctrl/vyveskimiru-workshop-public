@@ -105,6 +105,7 @@ export function createMediaGallery({ orderId, media = {}, api, onChange, onBusy 
         const decoration = doc.decoration?.kind === 'scan' ? ' · Скан-эффект' : doc.decoration?.kind === 'stamped' ? ' · Печать / подпись' : '';
         info.append(el('p', 'media-description', `Создан из заказа · ${doc.type === 'upd' ? 'УПД' : 'Счёт'} №${doc.number || '—'} · версия ${doc.version || '—'}${decoration}${doc.test ? ' · ТЕСТОВЫЙ · НЕ ДЛЯ ОПЛАТЫ' : ''}`));
       }
+      if (item.salesSource) info.append(el('p','media-description','Из переписки с клиентом'));
       if (item.source) info.append(el('p', 'media-description', `Из письма: ${item.source.subject || 'Без темы'} · ${item.source.from}${item.source.sentAt ? ` · ${new Date(item.source.sentAt).toLocaleDateString('ru-RU')}` : ''}`));
       if (item.derivedFrom?.kind === 'cdr-preview') {
         const original = current.items.find(file => file.id === item.derivedFrom.mediaId);
@@ -142,7 +143,7 @@ export function createMediaGallery({ orderId, media = {}, api, onChange, onBusy 
       grid.append(card);
     }
     const total = current.items.reduce((count, item) => count + (Number(item.size) || 0), 0);
-    storage.textContent = `${current.items.length} из 30 файлов · ${bytes(total)} из 200 МБ`;
+    storage.textContent = `${current.items.length} файлов · ${bytes(total)}`;
   }
   fileInput.addEventListener('change', async () => {
     const files = Array.from(fileInput.files || []);

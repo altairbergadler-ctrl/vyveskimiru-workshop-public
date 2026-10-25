@@ -1,7 +1,7 @@
 /* Local autosave: the photo and project are atomic in IndexedDB; the small journal
    preserves the latest edits on a fast reload without putting a photo in localStorage. */
 (function (root, factory) {
-  const api = factory();
+  const api = factory(typeof module === 'object' && module.exports ? require('./products.js') : root.SignageProducts);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else {
     root.SignageDraft = api;
@@ -12,7 +12,7 @@
     root.SignageDraft.ready = controller.start();
     root.SignageDraft.flush = controller.flush;
   }
-})(typeof window !== 'undefined' ? window : globalThis, function () {
+})(typeof window !== 'undefined' ? window : globalThis, function (Products) {
   'use strict';
   function openStore(indexedDB) {
     let opening;
@@ -88,7 +88,7 @@
       status.textContent = message;
       status.classList?.toggle('error', error);
     };
-    const clone = value => JSON.parse(JSON.stringify(value));
+    const clone = Products.copyData;
     function journal(record) {
       try {
         const {photo, ...metadata} = record.snapshot;

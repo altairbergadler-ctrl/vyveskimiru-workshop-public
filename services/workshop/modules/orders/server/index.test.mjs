@@ -649,7 +649,7 @@ test('media stays authenticated, is scoped to existing orders, and receives priv
   let authenticated = true;
   const mediaStore = {
     list: async () => ({ items: [item], coverId: item.id }),
-    read: async () => ({ bytes: Buffer.from('png'), media: item }),
+    open: async () => ({ bytes: Buffer.from('png'), name:item.name, mime:item.contentType, media: item }),
   };
   const server = await app(t, { mediaStore, fetchImpl: async () => authResponse(authenticated) });
   const filePath = `/kanban/api/orders/42/media/${item.id}`;

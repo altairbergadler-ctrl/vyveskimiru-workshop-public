@@ -303,6 +303,49 @@ class GenerationTests(unittest.TestCase):
         self.assertIn("NEVER paste or render the card", prompt)
         self.assertEqual(result.mode, "RGB")
 
+    def test_placed_fronts_are_preserved_by_worker_instead_of_removed_as_old_signage(self):
+        references = [self.canvas, self.guide]
+        with mock.patch.object(app.subprocess, "run", side_effect=self.success) as run:
+            app.generate(self.folder, "Finish the new placed sign in place", self.canvas, self.guide,
+                         reference_image_paths=references, preserve_placed_artwork=True)
+        prompt = run.call_args.kwargs["input"]
+        data = json.loads(prompt.split("Task data:\n", 1)[1])
+        self.assertIs(data["preserve_placed_artwork"], True)
+        self.assertEqual(data["referenced_image_paths"], [str(path.resolve()) for path in references])
+        self.assertIn("do not move, resize, recenter", prompt)
+        self.assertIn("do not mistake the new placed fronts for obsolete signage", prompt)
+        self.assertNotIn("Remove the existing sign/object", prompt)
+        self.assertEqual(run.call_count, 1)
+
+    def test_placed_front_flag_is_strict_and_requires_an_opaque_custom_reference_edit(self):
+        for options in ({"preserve_placed_artwork": "true"}, {"preserve_placed_artwork": True},
+                        {"preserve_placed_artwork": True, "transparent_background": True,
+                         "reference_image_paths": [self.guide]}):
+            with self.subTest(options=options), mock.patch.object(app.subprocess, "run") as run:
+                with self.assertRaisesRegex(RuntimeError, "Генерация не запускалась"):
+                    app.generate(self.folder, "Preserve new fronts", self.canvas, self.guide, **options)
+                run.assert_not_called()
+                self.assertFalse((self.folder / app._SCHEMA_NAME).exists())
+
+    def test_background_pass_forbids_new_signs_even_at_night(self):
+        with mock.patch.object(app.subprocess, "run", side_effect=self.success) as run:
+            app.generate(self.folder, "Clean wall at night", self.canvas, self.guide,
+                         reference_image_paths=[self.canvas, self.guide], background_only=True)
+        prompt = run.call_args.kwargs["input"]
+        self.assertIn("MANDATORY BACKGROUND-ONLY EDIT", prompt)
+        self.assertIn("even at night", prompt)
+        self.assertNotIn("night requires the new sign lights ON", prompt)
+        self.assertEqual(run.call_count, 1)
+
+    def test_background_flag_rejects_conflicting_modes_before_launch(self):
+        for options in ({"background_only": 1}, {"background_only": True, "transparent_background": True},
+                        {"background_only": True, "preserve_placed_artwork": True}):
+            with self.subTest(options=options), mock.patch.object(app.subprocess, "run") as run:
+                with self.assertRaisesRegex(RuntimeError, "Генерация не запускалась"):
+                    app.generate(self.folder, "Clean wall", self.canvas, self.guide,
+                                 reference_image_paths=[self.canvas, self.guide], **options)
+                run.assert_not_called()
+
     def test_custom_reference_count_and_container_are_strict(self):
         for references in ([], [self.canvas] * 9, str(self.canvas), iter([self.canvas]), 1, False):
             with self.subTest(references=type(references).__name__), mock.patch.object(app.subprocess, "run") as run:

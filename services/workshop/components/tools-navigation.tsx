@@ -1,4 +1,4 @@
-import { Calculator, ChevronRight, Image as ImageIcon, ScanLine, Stamp, Wrench } from 'lucide-react';
+import { Calculator, ClipboardList, ChevronRight, Image as ImageIcon, ScanLine, Stamp, Wrench } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +11,7 @@ import {
 } from './ui/dropdown-menu';
 
 const tools = [
+  { name: 'Рабочий стол продаж', href: '/sales/', Icon: ClipboardList },
   { name: 'Визуализация', href: '/signs/', Icon: ImageIcon },
   { name: 'Оттиск', href: '/tools/stamp/', Icon: Stamp },
   { name: 'Калькулятор вывесок', href: '/calculator/', Icon: Calculator },

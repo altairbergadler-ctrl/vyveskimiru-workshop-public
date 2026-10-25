@@ -17,6 +17,7 @@ FILES = frozenset({
     "source.png", "lighting-base.png", "scene-base.png", "render.png", "generated.png", "thumbnail.jpg",
     "color-reference.png", "edit-mask.png", "placement-guide.png", "render-input.png", "artwork.png",
     "product-neutral.png", "product-guide.png", "layout-guide.png", "facade-grid.png", "production-spec.json", "product-stage.json",
+    "installation-base.png", "front-mask.png",
     "input-project.json",
 })
 MAX_FILE = 128 * 1024 * 1024

@@ -13,13 +13,14 @@ import math
 import re
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, PngImagePlugin
 
 import product_catalog as catalog
 import facade_projection
 
 MAX_ARTWORK_BYTES = 2 * 1024 * 1024
-MAX_PROJECT_BYTES = 4 * 1024 * 1024
+# Match the existing request/draft budget, including embedded original logos.
+MAX_PROJECT_BYTES = 30 * 1024 * 1024
 MAX_ARTWORK_EDGE = 4096
 MAX_ARTWORK_PIXELS = 16_000_000
 DEFAULT_TEMPLATE = {"channel_letters": "letters-standard", "plaque": "plaque-hours", "neon": "neon-text-pink"}
@@ -65,19 +66,21 @@ def color(value, label):
     return value
 
 
-def decode_artwork(raw):
+def decode_artwork(raw, *, max_bytes=MAX_ARTWORK_BYTES, max_edge=MAX_ARTWORK_EDGE, max_pixels=MAX_ARTWORK_PIXELS):
     if not isinstance(raw, dict) or raw.get("mime_type") != "image/png":
         raise ProductError("Точный макет изделия должен быть PNG.")
     value = raw.get("data_url")
     if not isinstance(value, str) or not value.startswith("data:image/png;base64,"):
         raise ProductError("Не удалось прочитать точный PNG-макет изделия.")
-    if len(value) > ((MAX_ARTWORK_BYTES + 2) // 3) * 4 + 22:
-        raise ProductError("PNG-макет слишком большой: максимум 2 МиБ.")
+    if max_bytes is not None and len(value) > ((max_bytes + 2) // 3) * 4 + 22:
+        raise ProductError(f"PNG-макет слишком большой: максимум {max_bytes // (1024 * 1024)} МиБ.")
     for key in ("width_px", "height_px"):
         dim = raw.get(key)
-        if isinstance(dim, bool) or not isinstance(dim, int) or not 1 <= dim <= MAX_ARTWORK_EDGE:
-            raise ProductError("Размер PNG-макета должен быть от 1 до 4096 пикселей по каждой стороне.")
-    if raw["width_px"] * raw["height_px"] > MAX_ARTWORK_PIXELS:
+        if isinstance(dim, bool) or not isinstance(dim, int) or dim < 1:
+            raise ProductError("Размеры PNG-макета должны быть целыми положительными числами.")
+        if max_edge is not None and dim > max_edge:
+            raise ProductError(f"Размер PNG-макета должен быть от 1 до {max_edge} пикселей по каждой стороне.")
+    if max_pixels is not None and raw["width_px"] * raw["height_px"] > max_pixels:
         raise ProductError("PNG-макет превышает 16 мегапикселей.")
     if raw.get("source") not in ("uploaded", "text"):
         raise ProductError("Укажите происхождение точного макета: uploaded или text.")
@@ -85,17 +88,25 @@ def decode_artwork(raw):
         raise ProductError("Имя PNG-макета слишком длинное.")
     try:
         data = base64.b64decode(value.split(",", 1)[1], validate=True)
-        if len(data) > MAX_ARTWORK_BYTES:
-            raise ProductError("PNG-макет слишком большой: максимум 2 МиБ.")
-        with Image.open(io.BytesIO(data)) as image:
+        if max_bytes is not None and len(data) > max_bytes:
+            raise ProductError(f"PNG-макет слишком большой: максимум {max_bytes // (1024 * 1024)} МиБ.")
+        # Image.open applies the process-wide photo pixel threshold even when
+        # the logo policy has no resolution cap. Use the PNG decoder directly
+        # for that case; never relax the shared threshold for concurrent photos.
+        # Header/format/frame/dimension checks still precede pixel allocation.
+        opener = PngImagePlugin.PngImageFile if max_pixels is None else Image.open
+        with opener(io.BytesIO(data)) as image:
             if image.format != "PNG" or getattr(image, "n_frames", 1) != 1:
                 raise ProductError("Используйте обычный PNG-макет без анимации.")
             if image.size != (raw["width_px"], raw["height_px"]):
                 raise ProductError("Размеры PNG-макета не совпадают с данными проекта.")
-            if image.width > MAX_ARTWORK_EDGE or image.height > MAX_ARTWORK_EDGE or image.width * image.height > MAX_ARTWORK_PIXELS:
+            if ((max_edge is not None and max(image.size) > max_edge)
+                    or (max_pixels is not None and image.width * image.height > max_pixels)):
                 raise ProductError("PNG-макет слишком большой.")
             image.load()
-            result = image.convert("RGBA")
+            # Loaded RGBA pixels remain available after the file context exits.
+            # Avoid a second full-resolution buffer for large uploaded logos.
+            result = image if image.mode == "RGBA" else image.convert("RGBA")
         if not result.getchannel("A").getbbox():
             raise ProductError("PNG-макет полностью прозрачный.")
         return result, data
@@ -103,6 +114,11 @@ def decode_artwork(raw):
         raise
     except Exception as exc:
         raise ProductError("Не удалось прочитать точный PNG-макет изделия.") from exc
+
+
+def decode_logo_artwork(raw):
+    """Preserve uploaded logos without product-artwork byte or resolution caps."""
+    return decode_artwork(raw, max_bytes=None, max_edge=None, max_pixels=None)
 
 
 def active_product(project):
@@ -360,7 +376,7 @@ def shift_alpha(alpha, dx, dy):
     return moved
 
 
-def compose_product(base, mask, project, report):
+def compose_product(base, mask, project, report, *, surface_mask_path=None):
     product = active_product(project)
     kind, params = renderer_family(product), product["params"]
     artwork, raw = decode_artwork(product["artwork"])
@@ -378,6 +394,7 @@ def compose_product(base, mask, project, report):
     local_scale = min(2048 / max(width_cm, height_cm), max(2., scale * 2))
     local_size = (max(1, round(width_cm * local_scale)), max(1, round(height_cm * local_scale)))
     layer = Image.new("RGBA", base.size)
+    surface = Image.new("L", base.size) if surface_mask_path else None
     panel = Image.new("RGBA", local_size)
     draw = ImageDraw.Draw(panel)
     if kind in ("plaque", "lightbox"):
@@ -398,6 +415,8 @@ def compose_product(base, mask, project, report):
                          (local_size[0]-inset, local_size[1]-inset), (inset, local_size[1]-inset)):
                 draw.ellipse((x-cap, y-cap, x+cap, y+cap), fill="#aaaaaa", outline="#555555")
         warped_panel = project_artwork(panel)
+        if surface is not None:
+            surface = ImageChops.lighter(surface, warped_panel.getchannel("A"))
         depth_cm = params.get("depth_cm", 8) if kind == "lightbox" else params.get("thickness_mm", 3) / 10
         offset = min(12, max(2, round(depth_cm * scale)))
         shadow = shift_alpha(warped_panel.getchannel("A"), offset, offset).filter(ImageFilter.GaussianBlur(1.2))
@@ -410,7 +429,10 @@ def compose_product(base, mask, project, report):
             draw.rounded_rectangle((0, 0, local_size[0]-1, local_size[1]-1), radius=max(1, local_size[0] * .015),
                                    fill=(0, 0, 0, 230) if backing == "black" else (205, 220, 230, 30),
                                    outline=(180, 195, 200, 80))
-            layer = Image.alpha_composite(layer, project_artwork(panel))
+            backing = project_artwork(panel)
+            layer = Image.alpha_composite(layer, backing)
+            if surface is not None:
+                surface = ImageChops.lighter(surface, backing.getchannel("A"))
     elif kind not in ("flat_print", "cutout"):
         raise ProductError("Семейство изделия не поддерживает точное совмещение.")
     margin_mm = (params.get("backing_margin_mm", 20) if params.get("backing", "clear") != "none" else 0) if kind == "neon" else params.get("margin_mm", 0)
@@ -424,6 +446,10 @@ def compose_product(base, mask, project, report):
     local_art = Image.new("RGBA", local_size)
     local_art.paste(fitted_art, ((local_size[0]-fitted_size[0])//2, (local_size[1]-fitted_size[1])//2))
     warped_art = project_artwork(local_art)
+    if surface is not None:
+        surface = ImageChops.lighter(surface, warped_art.getchannel("A"))
+        if kind in ("flat_print", "cutout"):
+            surface = surface.point(lambda alpha: round(alpha*params.get("opacity", 1)))
     illuminated = kind in ("neon", "lightbox") and params.get("illumination", "on") == "on"
     if illuminated:
         glow_mm = params.get("tubing_mm", 8) if kind == "neon" else params.get("glow_mm", 8)
@@ -441,6 +467,8 @@ def compose_product(base, mask, project, report):
         layer.putalpha(layer.getchannel("A").point(lambda alpha: round(alpha * params["opacity"])))
     alpha = np.asarray(layer.getchannel("A"))
     allowed = np.asarray(mask) > 0
+    if surface is not None:
+        Image.fromarray(np.where(allowed, np.asarray(surface), 0).astype("uint8")).save(surface_mask_path)
     # The request is checked for padding before work begins; this is a final
     # pixel guard, including arbitrarily complex uploaded alpha contours.
     clipped = int(np.count_nonzero((alpha > 0) & ~allowed))

@@ -7,12 +7,14 @@
 </head>
 <body>
 <div id="authExpiredNotice" class="auth-notice" role="alert" hidden>Сеанс входа закончился. <a href="login.html?next=history.html" target="_blank" rel="noopener">Войти в новой вкладке</a>, затем нажмите «Обновить».</div>
-<header><div><small>Мастерская вывесок</small><h1>Проекты и генерации</h1></div><nav class="history-header-actions" aria-label="Действия с проектами"><a class="button primary" href="calibrator.html?newProject=1">+ Новый проект</a><a class="history-link" href="calibrator.html">Открыть редактор</a></nav></header>
+<header>
+<h1>Проекты и генерации</h1>
+<form id="searchForm" class="search-form" role="search"><label id="searchLabel" class="visually-hidden" for="search">Найти проект по названию или тексту варианта</label><div><input id="search" type="search" maxlength="300" placeholder="Название или текст" autocomplete="off"><button class="primary" type="submit">Найти</button><button id="clearSearch" type="button">Сбросить</button><button id="refreshHistory" type="button">Обновить</button></div></form>
+<nav class="history-header-actions" aria-label="Действия с проектами"><a class="button primary" href="calibrator.html?newProject=1">+ Новый проект</a><a class="button history-link" href="calibrator.html">Открыть редактор</a></nav>
+</header>
 <main>
-<p class="intro">Все варианты собраны по проектам. Сохранённые на сервере правки можно продолжить с любого компьютера после входа в редактор.</p>
 <nav id="projectBreadcrumb" class="project-breadcrumb" aria-label="Путь в истории" hidden><button id="backToProjects" type="button">← Все проекты</button><span id="breadcrumbName"></span></nav>
 <section id="projectHeading" class="project-heading" aria-labelledby="projectTitle" hidden><div><small id="projectMeta"></small><h2 id="projectTitle" tabindex="-1"></h2><p class="hint">Откройте вариант, чтобы посмотреть результат и его параметры.</p></div><a id="continueProject" class="button primary" target="_blank" rel="noopener">Продолжить редактирование ↗</a></section>
-<form id="searchForm" class="search-form" role="search"><label id="searchLabel" for="search">Найти проект по названию или тексту варианта</label><div><input id="search" type="search" maxlength="300" placeholder="Например, ЦВЕТЫ" autocomplete="off"><button class="primary" type="submit">Найти</button><button id="clearSearch" type="button">Сбросить</button><button id="refreshHistory" type="button">Обновить</button></div></form>
 <section id="mergePanel" class="merge-panel" aria-labelledby="mergeTitle" hidden><div class="merge-summary"><h2 id="mergeTitle">Объединить проекты</h2><span id="selectionCount"></span><button id="clearSelection" type="button">Снять выбор</button></div><div class="merge-controls"><label for="mergeTarget">Сохранить название и текущие правки проекта<select id="mergeTarget"></select></label><button id="mergeProjects" class="primary" type="button" disabled>Объединить выбранные</button></div><p id="mergeHint" class="hint">Выберите минимум два проекта. Все их варианты станут одной группой; файлы генераций сохранятся.</p><p id="mergeStatus" class="status" role="status" aria-live="polite"></p></section>
 <p id="historyStatus" class="status" role="status" aria-live="polite">Загружаю проекты…</p>
 <section id="detail" class="detail" aria-labelledby="detailTitle" hidden>

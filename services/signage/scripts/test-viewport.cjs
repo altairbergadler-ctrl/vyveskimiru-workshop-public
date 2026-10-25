@@ -21,6 +21,10 @@ function testModel() {
   assert.equal(model.imagePoint(-1, 100), null, 'Outside photo cannot become a calibration point');
   assert.equal(model.imagePoint(601, 100), null);
 
+  const fitted = clone(state);
+  model.panBy(1e4, -1e4);
+  assert.deepEqual(clone(model.snapshot()), fitted, 'A photo smaller than the field stays centred on both axes');
+
   const anchor = model.imagePoint(165, 110);
   model.zoomAt(1, 165, 110);
   samePoint(model.imagePoint(165, 110), anchor, 'Wheel zoom must keep the pixel below the cursor in place');
@@ -50,10 +54,21 @@ function testModel() {
   state = model.snapshot(); near(state.scale, state.minScale);
   model.panBy(1e8, 1e8);
   state = model.snapshot();
-  assert.ok(state.x < state.width && state.y < state.height, 'Panning cannot lose the whole image beyond the positive edge');
+  near(state.x, (state.width - image.width_px * state.scale) / 2);
+  near(state.y, (state.height - image.height_px * state.scale) / 2);
   model.panBy(-2e8, -2e8);
-  state = model.snapshot();
-  assert.ok(state.x + image.width_px * state.scale > 0 && state.y + image.height_px * state.scale > 0, 'Panning cannot lose the whole image beyond the negative edge');
+  assert.deepEqual(model.snapshot(), state, 'Zoomed-out photo cannot be dragged outside the field');
+  model.zoomAt(1);
+  model.panBy(1e8, 1e8);
+  state = model.snapshot(); near(state.x, 0); near(state.y, 0);
+  model.panBy(-2e8, -2e8);
+  state = model.snapshot(); near(state.x, state.width - 1200); near(state.y, state.height - 800);
+  model.restore({...state, x: 1e8, y: -1e8});
+  state = model.snapshot(); near(state.x, 0); near(state.y, state.height - 800);
+  model.configure(image, 1500, 600);
+  state = model.snapshot(); near(state.x, 150); assert.ok(state.y >= -200 && state.y <= 0);
+  model.panBy(-1e8, 1e8);
+  state = model.snapshot(); near(state.x, 150); near(state.y, 0);
 
   model.fit(); state = model.snapshot();
   near(state.scale, state.fitScale);
@@ -256,7 +271,6 @@ async function testEditor() {
   const saved = clone(app.editor.snapshot().project);
   near(app.editor.snapshot().report.ruler.total_cm, 150);
   app.element('measure').click();
-  app.element('zoomActual').click();
   fire(app.viewport, 'wheel', {deltaY: -100, deltaMode: 0});
   fire(app.viewport, 'pointerdown', {button: 1});
   app.pointEvent('click', [600, 400]);

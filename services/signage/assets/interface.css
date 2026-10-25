@@ -123,8 +123,6 @@ html[data-interface-ready=true][data-interface-production-open=false] .signage-e
 .signage-editor .interface-production-note{padding:11px;background:#f2f6f3;border-radius:8px;margin-bottom:12px}
 .signage-editor .main{position:sticky;top:16px;min-width:0;display:flex;flex-direction:column}
 .signage-editor .workspace{background:white;border:1px solid var(--line);overflow:hidden;border-radius:16px;box-shadow:0 2px 5px #172c3203;order:1}
-html[data-interface-ready=true][data-interface-step="4"][data-interface-result=true][data-interface-workspace=auto] .signage-editor .workspace:not([data-interface-focus-retained]){display:none}
-.signage-editor #interfaceWorkspaceToggle{font-size:12px;margin-bottom:16px;color:#006e60;background:#f4f8f5}
 .signage-editor .toolbar{display:flex;align-items:center;border-bottom:1px solid var(--line);flex-wrap:wrap;padding:12px 14px;gap:6px;min-height:57px}
 .signage-editor .toolbar strong{margin-right:auto;font-size:12px;max-width:100%;overflow-wrap:anywhere}
 .signage-editor .toolbar button{font-size:11px;padding:7px 9px;min-height:34px;border-radius:8px}
@@ -149,6 +147,9 @@ html[data-interface-ready=true][data-interface-step="4"][data-interface-result=t
 .signage-editor #exactArtworkSection{order:3}
 .signage-editor #corelSection{order:5}
 .signage-editor .ai-result{order:0;padding:20px;border-radius:16px;margin:0 0 16px}
+.signage-editor .interface-result-empty:not([hidden]){order:0;display:grid;align-content:center;min-height:280px;padding:32px;text-align:center;background:var(--surface,#fff);border:1px solid var(--line);border-radius:16px}
+.signage-editor .interface-result-empty h2{font-size:20px;margin:0 0 10px}
+.signage-editor .interface-result-empty p{color:var(--muted);font-size:13px;line-height:1.6;margin:0}
 .signage-editor .result-tabs button{min-height:38px;font-size:12px}
 .signage-editor .image-preview-frame{height:min(60vh,710px)}
 .signage-editor .footer-note{color:var(--muted);margin:16px 4px 15px;order:6;line-height:1.55;overflow-wrap:anywhere;font-size:11px}
@@ -233,3 +234,107 @@ html[data-interface-help-ready=true] .signage-editor [data-interface-help-source
 @media(max-width:620px){.signage-editor>header .proposal-link{font-size:11px;min-width:82px}.signage-editor>header .proposal-link::after{content:none}}
 /* Facade controls reuse the current workspace and leave its photograph intact. */
 .facade-controls{border:1px solid #d8e1df;border-radius:10px;padding:10px 12px;margin:10px 0;background:#f7faf8;min-width:0}.facade-controls>.check{font-weight:600}.facade-options{margin-top:8px}.facade-size{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12px;color:#53666a}.facade-size output{display:inline-block;color:#172c32;font-weight:600;margin-left:6px}.facade-settings{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;margin-top:8px}.facade-settings button{min-height:36px;font-size:12px}.facade-settings .check{font-size:12px}.facade-grid-step{display:flex!important;align-items:center;gap:6px!important;font-size:12px}.facade-grid-step input{width:76px!important;min-height:34px!important;margin:0!important;padding:6px 8px!important}.facade-controls .hint{margin:8px 0 0}.facade-controls [hidden]{display:none!important}@media(max-width:520px){.facade-controls{padding:9px}.facade-settings{gap:6px 10px}.facade-settings button{width:100%}.facade-size{gap:7px 14px}}
+
+/* Project actions and workflow share one compact editor header. */
+.signage-editor>header{display:block;min-height:0;margin-bottom:20px;padding:12px 24px}
+.signage-editor .interface-topbar{display:grid;grid-template-columns:auto minmax(460px,1fr) auto auto;align-items:center;gap:12px;min-width:0}
+.signage-editor>header h1{font-size:17px;margin:0;white-space:nowrap}
+.signage-editor>header .interface-brand{min-width:0}
+.signage-editor>header .project-workspace{max-width:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;gap:10px;flex-wrap:nowrap}
+.signage-editor>header .project-workspace label{flex:1 1 160px;min-width:120px;gap:0}
+.signage-editor>header #projectName{max-width:none;width:100%;min-height:40px;margin:0;padding:9px 11px;background:#f8fbf9;border-color:#b9cbc5;font-size:12px}
+.signage-editor>header .project-workspace-actions{flex:0 1 auto;gap:6px}
+.signage-editor>header .project-workspace button{min-height:40px;padding:8px 10px;font-size:12px;white-space:nowrap;background:transparent;border-color:#55726f;color:#eef5f1}
+.signage-editor>header .project-workspace button:hover{background:#274048}
+.signage-editor>header #saveServerProject{background:#006e60;border-color:#008672;color:white}
+.signage-editor>header #saveServerProject:hover{background:#00806e}
+.signage-editor>header .interface-header-state:not([hidden]){margin:0;min-width:0;width:auto;order:0}
+.signage-editor>header #interfaceConnection{max-width:100%;min-height:40px;padding:8px 10px;border-color:#55726f;font-size:12px}
+.signage-editor>header #interfaceConnection span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.signage-editor .interface-header-links{display:flex;align-items:center;gap:8px;min-width:0}
+.signage-editor>header .history-link{min-width:0;min-height:40px;padding:8px 11px;margin:0;font-size:12px;white-space:nowrap}
+.signage-editor>header .history-link::after{content:none}
+.signage-editor .interface-header-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;margin-top:10px;min-width:0}
+.signage-editor>header .interface-steps{max-width:none;width:auto;margin:0;padding:0;flex:0 1 auto}
+.signage-editor>header .interface-steps ol{gap:6px}
+.signage-editor>header .interface-steps li{gap:6px}
+.signage-editor>header .interface-steps li+li::before{width:20px;background:#3c5759}
+.signage-editor>header .interface-steps button{min-height:40px;padding:4px 12px 4px 4px;gap:8px;font-size:12px;color:#bfd2cd}
+.signage-editor>header .interface-steps button:hover{background:#274048}
+.signage-editor>header .interface-step-number{width:28px;height:28px;font-size:12px;background:#2e494c;color:#d9e7e1}
+.signage-editor>header .interface-steps button[aria-current=step]{background:#f4faf7;border-color:#91c4b0;color:#006e60}
+.signage-editor>header [aria-current=step] .interface-step-number{background:#006e60;color:white}
+.signage-editor>header .interface-steps button[data-complete=true]:not([aria-current=step]) .interface-step-number{background:#345c51;color:#bce9d7}
+.signage-editor .interface-project-status{flex:1 1 240px;min-width:0;margin:0;color:#bfd2cd;font-size:11px;line-height:1.45;text-align:right;overflow-wrap:anywhere}
+.signage-editor .interface-project-status.error{color:#ffd5a0}
+.signage-editor>header :is(button,a,input):focus-visible{outline-color:#80d7bf}
+.signage-editor .interface-visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+@media(max-width:1180px){
+ .signage-editor .interface-topbar{grid-template-columns:minmax(0,1fr) auto auto}
+ .signage-editor>header .project-workspace{grid-column:1/-1;grid-row:2}
+ .signage-editor .interface-header-bottom{flex-wrap:wrap;gap:8px 20px}
+ .signage-editor .interface-project-status{flex-basis:240px}
+}
+@media(max-width:700px){
+ .signage-editor>header{padding:12px;margin-bottom:12px}
+ .signage-editor .interface-topbar{grid-template-columns:minmax(0,1fr) auto;gap:10px 8px}
+ .signage-editor>header .interface-brand{grid-column:1/-1}
+ .signage-editor>header h1{font-size:16px;white-space:normal}
+ .signage-editor>header .project-workspace{flex-wrap:wrap;gap:8px}
+ .signage-editor>header .project-workspace label{flex-basis:100%;min-width:0}
+ .signage-editor>header .project-workspace-actions{width:100%;gap:6px}
+ .signage-editor>header .project-workspace button{flex:1;min-width:0;font-size:11px;padding:8px}
+ .signage-editor>header #reloadServerProject{flex-basis:100%}
+ .signage-editor>header #interfaceConnection{width:100%;font-size:11px;padding:8px;gap:5px}
+ .signage-editor>header .history-link{font-size:11px;padding:8px;min-height:40px}
+ .signage-editor .interface-header-links{gap:6px}
+ .signage-editor>header .interface-steps{width:100%}
+ .signage-editor>header .interface-steps ol{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ .signage-editor>header .interface-steps li{justify-content:stretch;min-width:0}
+ .signage-editor>header .interface-steps li+li::before{display:none}
+ .signage-editor>header .interface-steps button{width:100%;min-height:54px;flex-direction:column;padding:5px 2px;gap:4px;font-size:10px;border-radius:10px}
+ .signage-editor>header .interface-step-number{width:22px;height:22px;font-size:11px}
+ .signage-editor .interface-project-status{flex-basis:100%;text-align:left}
+}
+
+/* Canvas tools sit beside the image viewport, outside its point-placement events. */
+.signage-editor .canvas-surface{position:relative;isolation:isolate}
+.signage-editor .canvas-tools{position:absolute;top:12px;z-index:5;display:flex;gap:8px}
+.signage-editor .canvas-tools-left{left:12px}
+.signage-editor .canvas-tools-right{right:12px}
+.signage-editor .canvas-tools-view{top:auto;right:12px;bottom:12px;flex-direction:column}
+.signage-editor .canvas-tool{display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;border:1px solid #c7d7d1;border-radius:10px;background:#fff;color:#294e46;box-shadow:0 2px 8px #172c3226;touch-action:manipulation}
+.signage-editor .canvas-tool svg{display:block;pointer-events:none}
+.signage-editor .canvas-tool:hover{background:#edf6f1;border-color:#7cafa0}
+.signage-editor .canvas-tool[aria-pressed=true]{background:#006e60;border-color:#006e60;color:#fff}
+.signage-editor .canvas-tool:focus-visible{outline:3px solid #00a78e;outline-offset:3px}
+.signage-editor .canvas-surface+.toolbar{border-top:1px solid var(--line)}
+
+/* Result options use native radio controls; stored values keep the existing project format. */
+.signage-editor .generation-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;border:0;padding:0;margin:0 0 16px;min-width:0}
+.signage-editor .generation-choices legend{padding:0;margin-bottom:9px;font-size:12px;color:#345451}
+.signage-editor #sceneRetouchOptionsGroup{grid-template-columns:1fr;margin-bottom:0}
+.signage-editor .generation-choice{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #cbdcd5;border-radius:9px;min-height:44px;font-size:12px;line-height:1.4;cursor:pointer;min-width:0;background:white}
+.signage-editor .generation-choice:has(input:checked){background:#e8f5ee;border-color:#008271;color:#005b50}
+.signage-editor .generation-choice:has(input[value=photo_match]){grid-column:1/-1}
+.signage-editor .generation-choice input[type=radio]{appearance:auto;flex:0 0 16px;width:16px;height:16px;min-height:16px;padding:0;margin:0;accent-color:#007c6a}
+.signage-editor #aiResult .preview-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 16px}
+.signage-editor #aiResult .preview-actions button{min-height:42px;padding:9px 12px;font-size:12px}
+.signage-editor #aiResult .preview-actions>.hint{display:none}
+.signage-editor #aiResult .result-specification{margin-top:16px;padding:18px;background:#f7faf8;border:1px solid #d6e2dc;border-radius:12px;min-width:0}
+.signage-editor #aiResult .result-specification h3{margin:0 0 14px;font-size:16px;color:#173d35}
+.signage-editor #aiResult .result-colors{display:flex;flex-wrap:wrap;gap:10px 18px;margin-bottom:16px}
+.signage-editor #aiResult .result-color{font-size:12px;line-height:1.5;max-width:100%}
+.signage-editor #aiResult .result-parameters{font-size:13px;line-height:1.65;color:#29493f}
+.signage-editor .result-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px 22px;margin:0}
+.signage-editor .result-facts>div{min-width:0}
+.signage-editor .result-facts dt{font-size:11px;color:#61766e;margin:0 0 2px}
+.signage-editor .result-facts dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.signage-editor .result-object-card{margin-top:14px;padding:14px;background:white;border:1px solid #dce7e0;border-radius:10px}
+.signage-editor .result-object-card h4{margin:0 0 10px;font-size:14px;overflow-wrap:anywhere}
+.signage-editor .result-material-details{margin-top:14px;border-top:1px solid #dce7e0;padding-top:12px}
+.signage-editor .result-material-details summary{cursor:pointer;color:#366657;font-weight:600}
+.signage-editor .result-material-details p{font-size:13px;line-height:1.75;max-width:85ch;white-space:pre-line}
+
+.signage-editor #aiResult .image-preview-frame{height:auto;min-height:0}
+.signage-editor #generatedImage{height:auto;max-height:min(70vh,760px);object-fit:contain}

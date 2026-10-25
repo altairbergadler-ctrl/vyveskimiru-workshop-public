@@ -435,20 +435,13 @@ async function main() {
     const route=page({project:twoStageProject,serverProject:twoStageProject,productUI:true,twoStageConfigured:capability});
     await route.generation.ready;
     assert.equal(route.generation.settings().engine,capability===true?'codex_two_stage':'codex');
-    assert.equal(route.element('twoStageNote').hidden,capability!==true);
     assert.equal(route.element('generate').textContent,capability===true?'Визуализировать':'Создать ИИ-макет');
-    if(capability===true){
-      assert.equal(route.element('geometryLockTitle').textContent,'Разметка и размеры сохранены');
-      assert.ok(route.element('geometryLockHint').textContent.includes('ИИ-фото сверяйте по разметке'));
-      assert.ok(!route.element('geometryLockHint').textContent.includes('нельзя отключить'));
-    }
     assert.deepEqual(twoStageProject,sourceBefore,'Config and settings cannot change imported source dimensions, object parameters or artwork');
   }
   const plaque=P.createProduct('plaque'),plaqueProject={version:2,sign:clone(plaque.params),products:[plaque],active_product_id:plaque.id,generation:{lighting:'original'}};
   const otherProduct=page({project:plaqueProject,productUI:true,twoStageConfigured:true});
   await otherProduct.generation.ready;
   assert.equal(otherProduct.generation.settings().engine,'composite','Another product keeps its own rendering route');
-  assert.equal(otherProduct.element('twoStageNote').hidden,true);
 
   const newEngineProject=clone(twoStageProject);newEngineProject.generation.engine='codex_two_stage';newEngineProject.sign.construction=clone(ownerConstruction);
   const newEngineBefore=clone(newEngineProject);
@@ -475,6 +468,12 @@ async function main() {
   }
   for(const prefix of ['/','/signs/']){
     const flags={engine:'codex_two_stage',has_product_neutral:true,has_layout_guide:true,has_production_spec:true};
+    const locked=page({prefix,project:twoStageProject,serverProject:newEngineProject,productUI:true,twoStageConfigured:true,jobInfo:flags,audit:{exact_front_geometry:true}});
+    assert.equal(await locked.generation.restoreDraft(savedState()),true);
+    assert.equal(locked.element('resultGeometryLabel').textContent,'Размер и положение совпадают с разметкой');
+    assert.ok(locked.element('resultVerification').textContent.includes('перспектива зафиксированы'));
+    assert.ok(locked.element('resultMaterial').textContent.includes('Контуры лиц, размер и положение перенесены'));
+    assert.ok(!locked.element('resultVerification').textContent.includes('требуют сравнения'));
     const app=page({prefix,project:twoStageProject,serverProject:newEngineProject,productUI:true,twoStageConfigured:true,jobInfo:flags});
     assert.equal(await app.generation.restoreDraft(savedState({view:'neutral'})),true);
     assert.equal(app.element('resultStale').hidden,true,'The Codex execution alias alone cannot invalidate an older saved specification');

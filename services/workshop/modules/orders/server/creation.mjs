@@ -143,6 +143,17 @@ function readRecord(directory, requestId) {
   catch (error) { if (error.code === 'ENOENT') return null; throw new OrderError('ORDER_CREATE_JOURNAL', 'Не удалось проверить журнал создания заказов. Повторная запись заблокирована.', 503); }
 }
 
+// Read-only receipt state for callers choosing a new attempt after a proven unsent refusal.
+export function orderCreationState(requestId, { journalDir = process.env.ORDER_CREATE_DIR || '/var/lib/orders-kanban/creation' } = {}) {
+  if (typeof requestId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/iu.test(requestId)) throw new OrderError('INVALID_REQUEST_ID', 'Не указан постоянный номер заявки на создание заказа.', 400);
+  return readRecord(path.resolve(journalDir), requestId.toLowerCase())?.state ?? null;
+}
+
+export function verifiedOrderCreation(requestId, options={}) {
+  if(orderCreationState(requestId, options)!=='verified') return null;
+  return String(readRecord(path.resolve(options.journalDir || process.env.ORDER_CREATE_DIR || '/var/lib/orders-kanban/creation'),requestId.toLowerCase()).id);
+}
+
 function matchingIds(record, table) {
   return table.rows.filter(row => text(table.cell(row, '№ заказа')) && Number(text(table.cell(row, '№ заказа'))) === record.id);
 }

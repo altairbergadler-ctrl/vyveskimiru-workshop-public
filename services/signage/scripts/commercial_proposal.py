@@ -100,7 +100,8 @@ def source(service, job_id):
         obj = originals.get(item.get("id"))
         if not obj:
             raise ProposalError("Объект отсутствует в сохранённом проекте.")
-        img, image_bytes = product_render.decode_artwork(obj.get("artwork"))
+        decoder = product_render.decode_logo_artwork if obj.get("type") == "logo" else product_render.decode_artwork
+        img, image_bytes = decoder(obj.get("artwork"))
         if hashlib.sha256(image_bytes).hexdigest() != item.get("source_input", {}).get("artwork", {}).get("sha256"):
             raise ProposalError("Исходное изображение изделия изменилось.")
         dims = item.get("front_dimensions_cm", {})

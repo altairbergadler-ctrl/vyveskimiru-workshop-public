@@ -138,7 +138,7 @@ def warp_rgba(artwork, size, projection, local_size, *, boundary=None, destinati
     bottom = min(height, math.ceil(float(points[:, 1].max())-offset_y)+2)
     if left >= right or top >= bottom:
         return output
-    source = np.asarray(artwork.convert("RGBA"), dtype=np.uint8)
+    source = np.asarray(artwork if artwork.mode == "RGBA" else artwork.convert("RGBA"), dtype=np.uint8)
     source_height, source_width = source.shape[:2]
     strip_height = max(1, min(128, 262_144//max(1, right-left)))
     for start in range(top, bottom, strip_height):

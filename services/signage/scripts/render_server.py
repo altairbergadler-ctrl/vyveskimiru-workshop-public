@@ -31,6 +31,7 @@ import product_render
 import product_catalog
 import letter_objects
 import scene_retouch
+import photo_match
 import two_stage_letters
 import production_spec
 import project_store
@@ -263,7 +264,7 @@ def prepare(payload):
     # Use the same final representation and byte cap as the persisted history
     # reader. Canonical mirrors/defaults and formatting may enlarge raw input.
     if project.get("version") == 2 and len(saved_project_json(project).encode("utf-8")) > product_render.MAX_PROJECT_BYTES:
-        raise UserError("Сохранённый проект слишком большой: максимум 4 МиБ с точным макетом.")
+        raise UserError("Сохранённый проект слишком большой: максимум 30 МиБ с точным макетом.")
     source = decode_photo(payload.get("photo"))
     meta = project.get("image", {})
     if not isinstance(meta, dict):
@@ -318,10 +319,15 @@ def prepare(payload):
     if selected_engine == "codex_two_stage":
         project = production_spec.with_confirmed_construction(project)
         if len(saved_project_json(project).encode("utf-8")) > product_render.MAX_PROJECT_BYTES:
-            raise UserError("Сохранённый проект слишком большой: максимум 4 МиБ с точным макетом и конструкцией.")
+            raise UserError("Сохранённый проект слишком большой: максимум 30 МиБ с точным макетом и конструкцией.")
     mode = generation.get("lighting", "original")
     if mode not in MODES:
         raise UserError("Выберите режим освещения.")
+    matching = generation.get("photo_match")
+    if matching not in (None, photo_match.VERSION):
+        raise UserError("Неизвестный режим цветокоррекции фотографии.")
+    if matching and (selected_engine == "codex" or mode != "original"):
+        raise UserError("Цветокоррекция как на фото требует точных контуров изделия и исходного освещения.")
     if generation.get("edit_polygon_px"):
         # This independent UI tool explicitly draws straight photo-coordinate
         # segments. Only the calibrated placement-zone fallback is curved.
@@ -581,7 +587,8 @@ class Service:
 
     def artifact(self, identity, name):
         allowed = {"render.png", "source.png", "lighting-base.png", "scene-base.png", "audit.json", "project.json", "thumbnail.jpg", "artwork.png",
-                   "product-neutral.png", "product-guide.png", "layout-guide.png", "facade-grid.png", "production-spec.json"}
+                   "product-neutral.png", "product-guide.png", "layout-guide.png", "facade-grid.png", "production-spec.json",
+                   "installation-base.png", "front-mask.png"}
         if name not in allowed:
             raise FileNotFoundError()
         folder = self.job_folder(identity)
@@ -607,7 +614,7 @@ class Service:
 
     def read_saved(self, identity, name):
         file = self.artifact(identity, name)
-        if file.stat().st_size > 4 * 1024 * 1024:
+        if file.stat().st_size > product_render.MAX_PROJECT_BYTES:
             raise ValueError("Saved metadata too large")
         value = json.loads(file.read_text(encoding="utf-8-sig"))
         if not isinstance(value, dict):
@@ -876,6 +883,7 @@ class Service:
             (folder / "project.json").write_bytes(project_bytes)
             self.save_status(identity)
             production_bytes = None
+            surface_options = {"surface_mask_path": folder / "sign-surface-mask.png"} if project.get("generation", {}).get("photo_match") else {}
             active_renderer = self.renderer
             if selected_engine == "codex_two_stage":
                 with self.lock:
@@ -978,10 +986,10 @@ class Service:
                                              "generated_uniform_resolution_normalization": normalized})
                 try:
                     if "objects" in project["sign"] and product_render.renderer_family(product_render.active_product(project)) == "channel_letters":
-                        result, audit = letter_objects.compose_objects(composition_base, mask, project, report)
+                        result, audit = letter_objects.compose_objects(composition_base, mask, project, report, **surface_options)
                         artwork_bytes = None
                     else:
-                        result, audit, artwork_bytes = product_render.compose_product(composition_base, mask, project, report)
+                        result, audit, artwork_bytes = product_render.compose_product(composition_base, mask, project, report, **surface_options)
                 except product_render.ProductError as exc:
                     raise UserError(str(exc)) from exc
                 if artwork_bytes is not None:
@@ -1036,6 +1044,9 @@ class Service:
                 audit["scope"] = "Outside edit zone output equals scene-base.png pixel-for-pixel. Whole-photo retouch precedes placement; reconstructed architecture requires visual review. " + audit.get("scope", "")
             if transfer_file.is_file():
                 audit["image_transfer"] = json.loads(transfer_file.read_text(encoding="utf-8"))
+            if surface_options:
+                with Image.open(folder / "sign-surface-mask.png") as surface:
+                    result, audit["photo_match"] = photo_match.apply(source, result, surface.convert("L"))
             result.save(folder / "render.png")
             (folder / "audit.json").write_text(json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8")
             with self.lock:
@@ -1328,7 +1339,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.respond(404, {"error": "Проект не найден."})
                 except (ValueError, TypeError):
                     return self.respond(400, {"error": "Неверные параметры истории проектов."})
-            match = re.fullmatch(r"/api/jobs/([a-zA-Z0-9_-]{16,80})(?:/(render.png|source.png|lighting-base.png|scene-base.png|audit.json|project.json|thumbnail.jpg|artwork.png|product-neutral.png|product-guide.png|layout-guide.png|facade-grid.png|production-spec.json))?", path)
+            match = re.fullmatch(r"/api/jobs/([a-zA-Z0-9_-]{16,80})(?:/(render.png|source.png|lighting-base.png|scene-base.png|audit.json|project.json|thumbnail.jpg|artwork.png|product-neutral.png|product-guide.png|layout-guide.png|facade-grid.png|production-spec.json|installation-base.png|front-mask.png))?", path)
             if match:
                 try:
                     if not match[2]:
@@ -1371,6 +1382,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/project-workspace.js": ("project-workspace.js", "text/javascript; charset=utf-8"),
                   "/project-workspace.css": ("project-workspace.css", "text/css; charset=utf-8"),
                   "/generation.js": ("generation.js", "text/javascript; charset=utf-8"),
+                  "/generation-controls.js": ("generation-controls.js", "text/javascript; charset=utf-8"),
                   "/history.html": ("history.html", "text/html; charset=utf-8"),
                   "/proposals.html": ("proposals.html", "text/html; charset=utf-8"),
                   "/proposals.js": ("proposals.js", "text/javascript; charset=utf-8"),

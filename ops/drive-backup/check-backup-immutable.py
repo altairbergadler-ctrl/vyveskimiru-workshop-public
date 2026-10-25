@@ -19,6 +19,8 @@ assert pathlib.Path(meta['release']).resolve() == release, 'BACKUP_RELEASE_MISMA
 expected = {'finance.sqlite3', 'google-full.json.gz', 'files.tar.gz'}
 if meta.get('analytics') == 'present':
     expected.add('analytics.sqlite3')
+if meta.get('sales') == 'present':
+    expected.add('sales.sqlite3')
 seen = set()
 for line in (dest / 'SHA256SUMS').read_text().splitlines():
     digest, name = line.split()
@@ -39,4 +41,10 @@ if 'analytics.sqlite3' in expected:
     analytics_db = sqlite3.connect((dest / 'analytics.sqlite3').as_uri() + '?mode=ro&immutable=1', uri=True)
     assert analytics_db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok', 'INVALID_ANALYTICS_BACKUP'
     analytics_db.close()
+if 'sales.sqlite3' in expected:
+    with (dest / 'sales.sqlite3').open('rb') as stream:
+        assert stream.read(16) == b'SQLite format 3\x00', 'INVALID_SALES_BACKUP'
+    sales_db = sqlite3.connect((dest / 'sales.sqlite3').as_uri() + '?mode=ro&immutable=1', uri=True)
+    assert sales_db.execute('PRAGMA integrity_check').fetchone()[0] == 'ok', 'INVALID_SALES_BACKUP'
+    sales_db.close()
 print('Backup freshness, release, checksums, Google snapshot and SQLite: verified')

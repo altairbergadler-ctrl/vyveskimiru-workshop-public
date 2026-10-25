@@ -27,18 +27,25 @@ if test -f "$shared/data/analytics.sqlite3"; then
   analytics=present
   manifest+=(analytics.sqlite3)
 fi
+sales=absent
+if test -f "$shared/data/sales.sqlite3"; then
+  sqlite3 "$shared/data/sales.sqlite3" ".backup '$dest/sales.sqlite3'"
+  test "$(sqlite3 "$dest/sales.sqlite3" 'PRAGMA integrity_check;')" = ok
+  sales=present
+  manifest+=(sales.sqlite3)
+fi
 # These two files are process coordination, not recoverable application data.
 volatile=("$shared/data/mail-assistant-v2/lock" "$shared/data/mail-assistant-v2/lease.json")
-find "$shared/data" -type f ! -name 'finance.sqlite3*' ! -name 'analytics.sqlite3*' ! -path "${volatile[0]}" ! -path "${volatile[1]}" -print0 | sort -z | xargs -0 -r sha256sum > "$dest/files-before.sha256"
+find "$shared/data" -type f ! -name 'finance.sqlite3*' ! -name 'analytics.sqlite3*' ! -name 'sales.sqlite3*' ! -path "${volatile[0]}" ! -path "${volatile[1]}" -print0 | sort -z | xargs -0 -r sha256sum > "$dest/files-before.sha256"
 paths=("$shared" "$release")
 if [[ -z "${WORKSHOP_QA_ROOT:-}" ]]; then
   paths+=(/etc/caddy/Caddyfile /etc/systemd/system/finance-pwa-backup.service /etc/systemd/system/finance-pwa-backup.timer /etc/systemd/system/workshop-monitor.service /etc/systemd/system/workshop-monitor.timer)
 fi
-tar -czpf "$dest/files.tar.gz" --exclude='finance.sqlite3' --exclude='finance.sqlite3-wal' --exclude='finance.sqlite3-shm' --exclude='analytics.sqlite3' --exclude='analytics.sqlite3-wal' --exclude='analytics.sqlite3-shm' --exclude="${volatile[0]#/}" --exclude="${volatile[1]#/}" "${paths[@]}"
-find "$shared/data" -type f ! -name 'finance.sqlite3*' ! -name 'analytics.sqlite3*' ! -path "${volatile[0]}" ! -path "${volatile[1]}" -print0 | sort -z | xargs -0 -r sha256sum > "$dest/files-after.sha256"
+tar -czpf "$dest/files.tar.gz" --exclude='finance.sqlite3' --exclude='finance.sqlite3-wal' --exclude='finance.sqlite3-shm' --exclude='analytics.sqlite3' --exclude='analytics.sqlite3-wal' --exclude='analytics.sqlite3-shm' --exclude='sales.sqlite3' --exclude='sales.sqlite3-wal' --exclude='sales.sqlite3-shm' --exclude="${volatile[0]#/}" --exclude="${volatile[1]#/}" "${paths[@]}"
+find "$shared/data" -type f ! -name 'finance.sqlite3*' ! -name 'analytics.sqlite3*' ! -name 'sales.sqlite3*' ! -path "${volatile[0]}" ! -path "${volatile[1]}" -print0 | sort -z | xargs -0 -r sha256sum > "$dest/files-after.sha256"
 cmp "$dest/files-before.sha256" "$dest/files-after.sha256"
 gzip "$dest/google-full.json"
 (cd "$dest" && sha256sum "${manifest[@]}" > SHA256SUMS)
-printf 'started=%s\nfinished=%s\nrelease=%s\nanalytics=%s\n' "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$release" "$analytics" > "$dest/COMPLETE"
+printf 'started=%s\nfinished=%s\nrelease=%s\nanalytics=%s\nsales=%s\n' "$started" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$release" "$analytics" "$sales" > "$dest/COMPLETE"
 python3 /usr/local/lib/vps-drive/check-backup-immutable.py "$dest" "$release" 900
 echo "Workshop backup verified: $dest"

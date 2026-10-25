@@ -28,10 +28,9 @@ let renderCount=0;const window={SignageProducts:P,SignageEditor:{snapshot:()=>({
 vm.runInNewContext(fs.readFileSync(path.join(assets,'product-ui.js'),'utf8'),{window,document,console,setTimeout,clearTimeout},{filename:'product-ui.js'});
 const UI=window.SignageProductUI,get=id=>nodes.get(id),change=(id,value)=>{const e=get(id);if(typeof value==='boolean')e.checked=value;else e.value=value;for(const callback of get('dynamicProductFields').listeners.get('input')||[])callback({target:e});};
 assert.equal(get('productPicker').children.length,P.list().length);
-assert.equal(get('productTemplate').options.length,P.catalogue().length);
-get('catalogSearch').value='Вариант из данных';get('catalogSearch').oninput();assert.equal(get('productTemplate').options.length,1);assert.equal(UI.type(),'channel_letters','Filtering cannot apply a template');
-get('applyProductTemplate').onclick();assert.equal(UI.type(),'fixture_extension');assert.equal(UI.renderer(),'flat_print');
-assert.equal(get('productName').textContent,'Вариант из данных');assert.equal(get('catalogSelectionNote').textContent,'<script>alert(1)</script> Только плоская графика');
+for(const id of ['catalogSearch','catalogCategory','catalogCount','productTemplate','applyProductTemplate','catalogSelectionNote'])assert.equal(nodes.has(id),false,'Retired catalog UI: '+id);
+UI.switchType('fixture_extension');assert.equal(UI.type(),'fixture_extension');assert.equal(UI.renderer(),'flat_print');
+assert.equal(get('productName').textContent,'Вариант из данных');assert.equal(get('productCoverageNote').textContent,'Только плоская графика');
 assert.equal(get('productParam-owner_note').parent.textContent,'<img src=x onerror=alert(1)>','Labels are text, never HTML');
 assert.equal(get('productParam-owner_note').maxLength,50);
 change('productParam-edge_cm',17);change('productParam-edge_style','folded');change('productParam-owner_note','Сохранить');change('productParam-is_double',true);change('productParam-edge_color','#abcdef');
@@ -45,14 +44,13 @@ UI.switchType('fixture_extension');assert.equal(UI.active().params.owner_note,'�
 const draft=UI.draftState();assert.equal(draft.products.plaque.params.thickness_mm,7);assert.equal(draft.products.neon.params.tubing_mm,11);
 UI.switchType('cutout');assert.equal(get('artworkSource').disabled,true);assert.equal(get('artworkSource').value,'uploaded');assert.equal(get('corelSection').hidden,true);
 const required=P.catalogue().find(t=>t.artwork_policy==='uploaded_required'&&t.type!=='cutout');
-if(required){get('catalogSearch').value='';get('catalogSearch').oninput();get('productTemplate').value=required.id;get('applyProductTemplate').onclick();assert.equal(get('artworkSource').disabled,true,'QR, supplied contours and schemes cannot be invented from text');assert.equal(get('artworkSource').value,'uploaded');}
+if(required){const product=P.createProduct(required.type,required.id);UI.restore({version:2,products:[product],active_product_id:product.id});assert.equal(UI.active().template_id,required.id,'Saved catalog products retain their original settings');assert.equal(get('artworkSource').disabled,true,'Saved QR, supplied contours and schemes still require uploaded artwork');assert.equal(get('artworkSource').value,'uploaded');}
 const retired=clone(saved);retired.products[0].type='retired_print';retired.products[0].id='retired-product';retired.active_product_id='retired-product';UI.restore(retired);assert.equal(UI.compose(base).products[0].params.owner_note,'Сохранить','Retired modules with installed renderer retain saved unknown parameters');
-// Applying a new letters preset initializes an independent scene; reading an
+// Choosing letters for the first time initializes an independent scene; reading an
 // existing saved product still uses normal restore and retains its geometry.
 let freshLetters=0,restoredLetters=0;
 window.SignageLetterUI={restoreNew:sign=>{freshLetters++;base.sign={...base.sign,...sign,objects:[],composition_mode:'independent_signs_v1'};},restore:()=>{restoredLetters++;}};
-get('catalogSearch').value='';get('catalogSearch').oninput();get('productTemplate').value='letters-standard';
-get('applyProductTemplate').onclick();assert.equal(freshLetters,1);assert.equal(UI.active().params.composition_mode,'independent_signs_v1');
+UI.switchType('channel_letters');assert.equal(freshLetters,1);assert.equal(UI.active().params.composition_mode,'independent_signs_v1');
 assert.equal(UI.active().placement,null);const existingLetters={version:2,products:[UI.active()],active_product_id:UI.active().id};
 UI.restore(existingLetters);assert.equal(freshLetters,1);assert.equal(restoredLetters,1);
-console.log('PASS: generated catalog selection/filter, arbitrary module fields, safe labels, typed edits, uploaded original, legacy control IDs, per-type drafts, upload-required policies and retired renderer snapshots.');
+console.log('PASS: product-type selection without catalog controls, arbitrary module fields, safe labels, typed edits, uploaded originals, per-type drafts, saved catalog settings and retired renderer snapshots.');

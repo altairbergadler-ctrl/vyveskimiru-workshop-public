@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 
 // Keep the initial debt visible and exact; new diagnostics always fail.
 // A changed source line cannot silently inherit an old exception.
-const roots = ['app', 'components', 'hooks', 'lib', 'src', 'server', 'modules/orders/server', 'modules/orders/public', 'public', 'qa', 'deploy', 'prototypes/analytics', 'vite.config.ts'];
+const roots = ['app', 'components', 'hooks', 'lib', 'src', 'server', 'modules/orders/server', 'modules/orders/public', 'modules/sales/public', 'public', 'qa', 'deploy', 'prototypes/analytics', 'vite.config.ts'];
 const bin = path.resolve('node_modules/oxlint/bin/oxlint');
 const run = spawnSync(process.execPath, [bin, ...roots, '--format', 'json'], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
 if (run.error || !run.stdout) throw new Error('Linter could not run');

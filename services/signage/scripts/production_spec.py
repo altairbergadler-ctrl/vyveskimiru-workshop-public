@@ -37,12 +37,12 @@ def _dimension(value):
 
 
 def build(project, report, project_bytes, input_project_bytes=None):
-    if not isinstance(project_bytes, bytes) or len(project_bytes) > 8 * 1024 * 1024:
+    if not isinstance(project_bytes, bytes) or len(project_bytes) > product_render.MAX_PROJECT_BYTES:
         raise ValueError("Invalid saved project snapshot")
     saved = json.loads(project_bytes.decode("utf-8"))
     received = None
     if input_project_bytes is not None:
-        if not isinstance(input_project_bytes, bytes) or len(input_project_bytes) > 8 * 1024 * 1024:
+        if not isinstance(input_project_bytes, bytes) or len(input_project_bytes) > product_render.MAX_PROJECT_BYTES:
             raise ValueError("Invalid received project snapshot")
         received = json.loads(input_project_bytes.decode("utf-8"))
         if not isinstance(received, dict):
@@ -59,7 +59,8 @@ def build(project, report, project_bytes, input_project_bytes=None):
     result = []
     for obj in objects:
         layout = layouts[obj["id"]]
-        front, data = product_render.decode_artwork(obj["artwork"])
+        decoder = product_render.decode_logo_artwork if obj["type"] == "logo" else product_render.decode_artwork
+        front, data = decoder(obj["artwork"])
         artwork = copy.deepcopy(obj["artwork"])
         artwork.pop("data_url", None)
         artwork.update(sha256=hashlib.sha256(data).hexdigest(),

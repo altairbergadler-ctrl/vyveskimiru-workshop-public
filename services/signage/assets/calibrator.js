@@ -8,11 +8,13 @@ let photoViewport=null, resetViewport=false;
 let objectDrag=null;
 let compositionDrag=null;
 let facade=null, facadeDrag=null, facadeAlignments=[];
+let dragChangePending=false;
+const dragging=()=>Boolean(facadeDrag||compositionDrag||objectDrag);
 const F=window.SignageFacadeUI;
 // Editing can show recoverable object errors; export/generation still use report.
 let previewReport=null;
 let rulerPoints=[], rulerHover=null, rulerCalibration=null, rulerCalibrationError='';
-const controls=['referenceLength','referenceWidth','referenceHeight','frontal','text','signWidth','signHeight','lineGap','textAlign','depth','rotation','frontColor','sideColor','font','brief','faceMaterialType','filmSeries','filmColorCode','filmFinish','filmAcrylic','filmLedTemperature','filmDayLighting'];
+const controls=['referenceLength','referenceWidth','referenceHeight','text','signWidth','signHeight','lineGap','textAlign','depth','rotation','frontColor','sideColor','font','brief','faceMaterialType','filmSeries','filmColorCode','filmFinish','filmAcrylic','filmLedTemperature','filmDayLighting'];
 const numeric = id => Number($(id).value);
 const independentSigns=()=>window.SignageProductUI?.renderer()==='channel_letters'&&window.SignageLetterUI?.independent?.()===true;
 const signText = () => G.textLines($('text').value).join('\n');
@@ -37,7 +39,7 @@ function previewLineMetrics(text){
 }
 function project() {
   const rectangle=$('calibrationMode').value==='rectangle',text=window.SignageProductUI?.renderer()==='channel_letters'&&window.SignageLetterUI?.summaryText?window.SignageLetterUI.summaryText().slice(0,300):signText();
-  const base={...(imported||{}),version:1,image:imageMeta,calibration:{...(imported?.calibration||{}),mode:rectangle?'rectangle':'frontoparallel',plane:imported?.calibration?.plane||'Плоскость установки',image_points:projectPoints,...(rectangle?{width_cm:numeric('referenceWidth'),height_cm:numeric('referenceHeight')}:{length_cm:numeric('referenceLength'),frontoparallel_assumed:$('frontal').checked})},placement:center?{...(imported?.placement||{}),center_px:center,width_cm:numeric('signWidth'),height_cm:numeric('signHeight'),rotation_deg:numeric('rotation')}:null,sign:{...(imported?.sign||{}),text,line_gap_cm:numeric('lineGap'),text_align:$('textAlign').value,font_family:$('font').value,font_bold:window.SignageCorel?.settings().font_bold??imported?.sign?.font_bold??true,preview_line_metrics:previewLineMetrics(text),preview_font_status:'Эскиз Arial; точное начертание сверить с ТЗ или векторным оригиналом',front_color:$('frontColor').value,side_color:$('sideColor').value,face_material:faceMaterial(),depth_cm:numeric('depth'),brief:$('brief').value,size_basis:'Габарит всей композиции с учётом строк и межстрочных зазоров, не высота каждой буквы'},target_polygon_px:target,measurements,ruler:{...(imported?.ruler||{}),image_points:rulerPoints.map(p=>[...p]),same_plane:$('rulerSamePlane').checked},checks,assumptions:imported?.assumptions||[],spec_source:imported?.spec_source||null,generation:{...(imported?.generation||{}),...(window.SignageGeneration?.settings()||{})}};
+  const base={...(imported||{}),version:1,image:imageMeta,calibration:{...(imported?.calibration||{}),mode:rectangle?'rectangle':'frontoparallel',plane:imported?.calibration?.plane||'Плоскость установки',image_points:projectPoints,...(rectangle?{width_cm:numeric('referenceWidth'),height_cm:numeric('referenceHeight')}:{length_cm:numeric('referenceLength'),frontoparallel_assumed:true})},placement:center?{...(imported?.placement||{}),center_px:center,width_cm:numeric('signWidth'),height_cm:numeric('signHeight'),rotation_deg:numeric('rotation')}:null,sign:{...(imported?.sign||{}),text,line_gap_cm:numeric('lineGap'),text_align:$('textAlign').value,font_family:$('font').value,font_bold:window.SignageCorel?.settings().font_bold??imported?.sign?.font_bold??true,preview_line_metrics:previewLineMetrics(text),preview_font_status:'Эскиз Arial; точное начертание сверить с ТЗ или векторным оригиналом',front_color:$('frontColor').value,side_color:$('sideColor').value,face_material:faceMaterial(),depth_cm:numeric('depth'),brief:$('brief').value,size_basis:'Габарит всей композиции с учётом строк и межстрочных зазоров, не высота каждой буквы'},target_polygon_px:target,measurements,ruler:{...(imported?.ruler||{}),image_points:rulerPoints.map(p=>[...p]),same_plane:$('rulerSamePlane').checked},checks,assumptions:imported?.assumptions||[],spec_source:imported?.spec_source||null,generation:{...(imported?.generation||{}),...(window.SignageGeneration?.settings()||{})}};
   if(window.SignageProductUI?.renderer()==='channel_letters'&&window.SignageLetterUI){
     Object.assign(base.sign,window.SignageLetterUI.settings());
     delete base.sign.line_styles;delete base.sign.logo;
@@ -58,7 +60,7 @@ function setMode(mode) {
   $('instruction').textContent={reference:$('calibrationMode').value==='rectangle'?'Отметьте 4 угла: левый верхний → правый верхний → правый нижний → левый нижний.':'Нажмите на два конца отрезка с известной длиной.',place:'Нажмите на центр будущей вывески.',target:'Отметьте прямоугольный участок фасада: левый верхний → правый верхний → правый нижний → левый нижний. Противоположные края параллельны в реальности.',facadeEdges:'Отметьте по точке между углами прямых краёв: верхний → правый → нижний → левый. Точки показывают изгиб объектива.',editRegion:'Отметьте 4 угла зоны замены по периметру. В ней ИИ может убрать старую вывеску, восстановить фон и разместить новое изделие.',measure:'Линейка: левый клик добавляет точку, правый клик по точке удаляет её. Esc — выйти; Delete / Backspace — убрать последнюю точку.'}[mode]||'Точки сохранены. Можно изменить ТЗ или сделать замер.';
   render();
 }
-function calibrationSignature(){return JSON.stringify({mode:$('calibrationMode').value,points:projectPoints,length:numeric('referenceLength'),width:numeric('referenceWidth'),height:numeric('referenceHeight'),frontal:$('frontal').checked,facade,target});}
+function calibrationSignature(){return JSON.stringify({mode:$('calibrationMode').value,points:projectPoints,length:numeric('referenceLength'),width:numeric('referenceWidth'),height:numeric('referenceHeight'),facade,target});}
 function updateMode(){const rect=$('calibrationMode').value==='rectangle';$('frontFields').hidden=rect;$('rectangleFields').hidden=!rect;}
 function renderFacadeControls(){
   const enabled=facade?.enabled===true,calibration=previewReport?.calibration||rulerCalibration;
@@ -83,7 +85,7 @@ function drawPoints(){
   const overlay=$('overlay');
   if (!imageMeta || !photoData) {overlay.replaceChildren();return;}
   overlay.setAttribute('viewBox',`0 0 ${imageMeta.width_px} ${imageMeta.height_px}`);
-  if(previewReport){const parsed=new DOMParser().parseFromString(G.overlaySvg(project(),previewReport,'',{includeText:false,includeRuler:false,includeReference:false}),'image/svg+xml');overlay.replaceChildren(...Array.from(parsed.documentElement.childNodes).map(n=>document.importNode(n,true)));}
+  if(previewReport){const parsed=new DOMParser().parseFromString(G.overlaySvg(project(),previewReport,'',{includeText:false,includeRuler:false,includeReference:false,includeCaption:false}),'image/svg+xml');overlay.replaceChildren(...Array.from(parsed.documentElement.childNodes).map(n=>document.importNode(n,true)));}
   else overlay.replaceChildren();
   const zone=overlay.querySelector('polygon[fill="#ffb454"]');
   if(zone)zone.setAttribute('data-composition-zone','true');
@@ -144,7 +146,9 @@ function fitStage(){
 function render(){
   report=null;previewReport=null;let error='';
   updateMaterialFields();
-  fitStage();
+  // The photo viewport does not change when an object moves. Reconfiguring it
+  // would redraw again and emit a second autosave event for every pointer move.
+  if(!dragging())fitStage();
   $('openPhotoImage').disabled=!photoData;
   rulerCalibration=null;rulerCalibrationError='Сначала загрузите фото и отметьте эталон.';
   if(imageMeta)try{rulerCalibration=G.sceneCalibration(project());rulerCalibrationError='';}catch(e){rulerCalibrationError=e.message;}
@@ -164,8 +168,8 @@ function render(){
   if(!previewReport&&imageMeta&&window.SignageProductUI?.renderer()==='channel_letters'){
     try{previewReport=G.analyze(project(),{preview:true});}catch{ /* Calibration and global errors still require correction. */ }
   }
-  ['reference','place','target','measure','editRegion'].forEach(id=>$(id)?.classList.toggle('active',id===action));
-  $('measure').setAttribute('aria-pressed',String(action==='measure'));
+  ['reference','place','target','measure'].forEach(id=>$(id)?.classList.toggle('active',id===action));
+  ['target','measure'].forEach(id=>$(id).setAttribute('aria-pressed',String(action===id)));
   $('rulerInfo').hidden=action!=='measure'&&!rulerPoints.length;
   $('clearRuler').hidden=action!=='measure'&&!rulerPoints.length;
   $('clearRuler').disabled=!rulerPoints.length;
@@ -180,7 +184,9 @@ function render(){
   ['exportProject','exportSvg','exportPng'].forEach(id=>$(id).disabled=!report);
   $('exportPng').disabled=!report||!photoData;
   window.SignageLetterUI?.updateLayout(previewReport?.sign_layout);
-  drawPoints();drawText();drawRuler(true);document.dispatchEvent(new Event('signage:change'));
+  drawPoints();drawText();drawRuler(true);
+  if(dragging())dragChangePending=true;
+  else document.dispatchEvent(new Event('signage:change'));
 }
 function loadPhoto(data,name,preserve=false){
   return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{
@@ -196,7 +202,8 @@ $('photo').addEventListener('change',async e=>{
 });
 $('calibrationMode').onchange=()=>{cancelDrag();projectPoints=[];pending=[];rulerHover=null;action='';updateMode();render();};
 controls.forEach(id=>$(id).addEventListener('input',()=>{cancelDrag();render();}));
-['reference','place','target'].forEach(id=>$(id).onclick=()=>setMode(id));
+['reference','place'].forEach(id=>$(id).onclick=()=>setMode(id));
+$('target').onclick=()=>setMode(action==='target'?'':'target');
 $('measure').onclick=()=>setMode(action==='measure'?'':'measure');
 $('rulerSamePlane').addEventListener('change',render);
 $('clearRuler').onclick=()=>{rulerPoints=[];rulerHover=null;render();};
@@ -343,13 +350,18 @@ $('imageViewport').addEventListener('pointermove',event=>{
   event.preventDefault();event.stopImmediatePropagation();
 },true);
 function cancelDrag(){
-  const drag=facadeDrag||compositionDrag||objectDrag,hadGuides=facadeAlignments.length;
+  const drag=facadeDrag||compositionDrag||objectDrag,hadGuides=facadeAlignments.length,changed=dragChangePending;
+  dragChangePending=false;
   compositionDrag=null;objectDrag=null;facadeDrag=null;facadeAlignments=[];$('stage').style.cursor='';
   if(drag&&$('imageViewport').hasPointerCapture(drag.pointer))$('imageViewport').releasePointerCapture(drag.pointer);
   if(hadGuides)drawPoints();
+  // Commit once on release, cancel, blur or leaving the page. The small local
+  // recovery journal is updated synchronously before pagehide flushes IndexedDB.
+  if(changed)document.dispatchEvent(new Event('signage:change'));
 }
 $('imageViewport').addEventListener('lostpointercapture',cancelDrag);
 window.addEventListener('blur',cancelDrag);
+window.addEventListener('pagehide',cancelDrag);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelDrag();});
 $('imageViewport').addEventListener('pointerleave',()=>{if(!objectDrag&&!compositionDrag)$('stage').style.cursor='';});
 for(const type of ['pointerup','pointercancel'])$('imageViewport').addEventListener(type,event=>{
@@ -405,13 +417,15 @@ function applyProject(p,{allowIncomplete=false}={}){
   cancelDrag();
   if(window.SignageProducts){p=window.SignageProducts.normalizeProject(p);const legacy=window.SignageProducts.legacyProject(p);p={...p,sign:legacy.sign,placement:legacy.placement};}
   if(!p.image||!p.calibration)throw new Error('Проект не содержит фотографию и калибровку.');
+  // Segment calibration always uses the approximate frontal-view assumption.
+  if(p.calibration.mode==='frontoparallel')p={...p,calibration:{...p.calibration,frontoparallel_assumed:true}};
   if(!allowIncomplete)G.analyze(p);
   const nextRuler=window.SignageRuler.validate(p.ruler?.image_points||[],p.image);
   const mismatched=imageMeta&&(imageMeta.width_px!==p.image.width_px||imageMeta.height_px!==p.image.height_px||imageMeta.name!==p.image.name);
   if(mismatched){photoData='';$('image').hidden=true;$('empty').hidden=false;$('empty').textContent='Загрузите исходное фото этого проекта. Размеры и точки сохранены.';}
   window.SignageProductUI?.restore(p);imported=p;facade=F.normalize(p.facade);imageMeta=p.image;projectPoints=p.calibration.image_points;center=p.placement?.center_px||null;target=p.target_polygon_px||null;measurements=p.measurements||[];checks=p.checks||[];
   rulerPoints=nextRuler;rulerHover=null;$('rulerSamePlane').checked=p.ruler?p.ruler.same_plane===true:true;
-  $('calibrationMode').value=p.calibration.mode;$('frontal').checked=p.calibration.frontoparallel_assumed===true;
+  $('calibrationMode').value=p.calibration.mode;
   const material=p.sign?.face_material;
   const pairs={referenceLength:p.calibration.length_cm,referenceWidth:p.calibration.width_cm,referenceHeight:p.calibration.height_cm,signWidth:p.placement?.width_cm,signHeight:p.placement?.height_cm,lineGap:p.sign?.line_gap_cm??5,textAlign:p.sign?.text_align??'center',rotation:p.placement?.rotation_deg??0,text:p.sign?.text??'',font:p.sign?.font_family??'Arial',depth:p.sign?.depth_cm??0,frontColor:p.sign?.front_color??'#fff3dc',sideColor:p.sign?.side_color??'#292f30',faceMaterialType:material?.type??'custom',filmSeries:material?.series??'',filmColorCode:material?.color_code??'',filmFinish:material?.finish??'unspecified',filmAcrylic:material?.acrylic??'unspecified',filmLedTemperature:material?.led_temperature_k??'',filmDayLighting:material?.day_lighting??'off',brief:p.sign?.brief??[p.sign?.material,p.sign?.lighting].filter(Boolean).join('. ')};
   Object.entries(pairs).forEach(([key,val])=>{if(val!==undefined)$(key).value=val;});window.SignageCorel?.restore(p.sign);window.SignageGeneration?.restore(p.generation);action='';pending=[];updateMode();render();$('instruction').textContent=photoData?'Проект открыт.':'Проект открыт. Загрузите его исходное фото; точки останутся на месте.';
@@ -424,7 +438,7 @@ $('demo').onclick=async()=>{
   applyProject({version:1,image:imageMeta,calibration:{mode:'rectangle',width_cm:400,height_cm:100,image_points:[[206,181],[982,224],[982,390],[206,390]]},placement:{center_px:[594,294],width_cm:220,height_cm:45,rotation_deg:0},sign:{text:'КОФЕ',font_family:'Arial',depth_cm:5,front_color:'#fff3dc',side_color:'#292f30',brief:'Учебный пример. Молочный акрил, тёплый контражур.'},target_polygon_px:[[206,181],[982,224],[982,390],[206,390]],measurements:[],checks:[]});
   $('instruction').textContent='Учебный пример: размеры панели заданы для демонстрации. Загрузите своё фото для реального макета.';
 };
-photoViewport=window.SignageViewport.mount({viewport:$('imageViewport'),stage:$('stage'),controls:{zoomIn:$('zoomIn'),zoomOut:$('zoomOut'),zoomFit:$('zoomFit'),zoomActual:$('zoomActual'),zoomLevel:$('zoomLevel')},onChange:()=>{rulerHover=null;drawPoints();if(previewReport)drawText();drawRuler();document.dispatchEvent(new Event('signage:viewchange'));}});
+photoViewport=window.SignageViewport.mount({viewport:$('imageViewport'),stage:$('stage'),controls:{zoomFit:$('zoomFit')},onChange:()=>{rulerHover=null;drawPoints();if(previewReport)drawText();drawRuler();document.dispatchEvent(new Event('signage:viewchange'));}});
 new ResizeObserver(()=>{if(previewReport)drawText();drawRuler();}).observe($('stage'));
 new ResizeObserver(fitStage).observe($('imageViewport'));
 window.addEventListener('resize',fitStage);
@@ -456,8 +470,8 @@ window.SignageEditor.restoreDraft=async(saved,{shouldApply=()=>true}={})=>{
   window.SignageProductUI?.restoreDraftState(saved.productUi);
   window.SignageLetterUI?.restoreDraftState?.(saved.letterUi);
   draftControls.forEach(id=>{const field=$(id),value=saved.ui?.[id];if(field&&value){if(typeof value.value==='string')field.value=value.value;if(typeof value.checked==='boolean')field.checked=value.checked;}});
-  action=decoded&&['reference','place','target','facadeEdges','measure','editRegion'].includes(saved.interaction?.action)&&!(independentSigns()&&saved.interaction.action==='place')?saved.interaction.action:'';
-  pending=decoded?(saved.interaction?.pending||[]).map(point=>[...point]):[];
+  action=decoded&&['reference','place','target','facadeEdges','measure'].includes(saved.interaction?.action)&&!(independentSigns()&&saved.interaction.action==='place')?saved.interaction.action:'';
+  pending=decoded&&saved.interaction?.action!=='editRegion'?(saved.interaction?.pending||[]).map(point=>[...point]):[];
   updateMode();render();photoViewport.restore(saved.view);
   $('instruction').textContent=action==='measure'?'Линейка восстановлена. Левый клик — новая точка, правый клик по точке — удалить.':action?'Черновик восстановлен. Продолжайте отмечать точки выбранного инструмента.':'Черновик восстановлен. Можно продолжать работу.';
   return true;

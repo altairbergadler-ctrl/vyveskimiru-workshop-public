@@ -69,6 +69,33 @@
       label.textContent=`${name}: ${valid?color.toUpperCase():'не указан'}`;item.append(sample,label);return item;
     }));
   }
+  function renderParameters(container,{project,mode,geometry,summary,audit}){
+    let product;
+    try{product=window.SignageProducts?.activeProduct(project);}catch{}
+    const sign=product?.params||project.sign||{},generation=project.generation||{};
+    const node=(tag,text,className)=>{const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;};
+    const facts=rows=>{const list=node('dl',undefined,'result-facts');for(const [label,value] of rows){const item=node('div');item.append(node('dt',label),node('dd',value));list.append(item);}return list;};
+    const lighting=generation.photo_match==='source_noise_v1'?'Цветокоррекция как на фото':({original:'Исходное освещение',sunny:'Солнечный день',cloudy:'Облачно',night:'Ночь'}[mode]||mode);
+    const content=[facts([['Освещение',lighting],['Ретушь окружения',generation.scene_retouch?.mode==='ideal_environment'?'Идеальная среда':'Как на исходном фото']])];
+    if(Array.isArray(sign.objects))for(const {object,name} of namedObjects(sign.objects)){
+      const card=node('section',undefined,'result-object-card');
+      card.append(node('h4',object.type==='text'?`${name} · ${object.text||''}`:name));
+      const rows=object.type==='logo'?[['Ширина по ТЗ',cm(object.width_cm)]]:[
+        [object.height_basis==='body'?'Основная высота букв':'Максимальная высота строки',cm(object.letter_height_cm)],
+        ['Шрифт',`${object.font_family||'не указан'}${object.font_bold?' · жирный':''}`]
+      ];
+      rows.push(['Глубина по ТЗ',cm(object.depth_cm)]);
+      const layout=geometry?.sign_layout?.objects?.find(item=>item.id===object.id);
+      if(Number.isFinite(layout?.width_cm)&&Number.isFinite(layout?.height_cm))rows.push(['Полный габарит',`${cm(layout.width_cm)} × ${cm(layout.height_cm)}`]);
+      card.append(facts(rows));content.push(card);
+    }else{
+      const placement=product?.placement||project.placement;
+      if(Number.isFinite(placement?.width_cm)&&Number.isFinite(placement?.height_cm))content.push(facts([['Габарит',`${cm(placement.width_cm)} × ${cm(placement.height_cm)}`]]));
+    }
+    if(audit?.photo_match)content.push(node('p',audit.photo_match.applied?'Зерно исходной фотографии наложено на поверхность вывески.':'Дополнительное зерно не потребовалось.'));
+    const details=node('details',undefined,'result-material-details');details.append(node('summary','Материалы и пояснения'),node('p',summary));content.push(details);
+    container.replaceChildren(...content);
+  }
   const dialog=document.createElement('dialog');dialog.className='image-dialog';dialog.setAttribute('aria-labelledby','imageDialogTitle');
   const bar=document.createElement('div');bar.className='image-dialog-toolbar';
   const title=document.createElement('h2');title.id='imageDialogTitle';
@@ -85,5 +112,5 @@
   function openImage({src,title:caption='Изображение',filename='signage.png'}){
     if(!src)return;opener=document.activeElement;title.textContent=caption;img.alt=caption;img.src=src;download.href=src;download.download=filename;setZoom(false);if(!dialog.open)dialog.showModal();close.focus();
   }
-  window.SignagePreview={materialSummary,colorSwatches,openImage};
+  window.SignagePreview={materialSummary,colorSwatches,renderParameters,openImage};
 })();

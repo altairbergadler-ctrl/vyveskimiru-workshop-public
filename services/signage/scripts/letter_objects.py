@@ -18,7 +18,7 @@ import facade_projection
 
 MAX_OBJECTS = 20
 MAX_OBJECT_ARTWORK_BYTES = 1024 * 1024
-MAX_OBJECTS_JSON_BYTES = 4 * 1024 * 1024
+MAX_OBJECTS_JSON_BYTES = products.MAX_PROJECT_BYTES
 METRIC_KEYS = ("width", "actualBoundingBoxAscent", "actualBoundingBoxDescent",
                "actualBoundingBoxLeft", "actualBoundingBoxRight")
 OBJECT_COMPOSITION_MODE = "independent_objects_v1"
@@ -81,18 +81,10 @@ def _decode_object_artwork(obj):
     artwork = obj.get("artwork")
     if not isinstance(artwork, dict):
         raise products.ProductError("Подготовьте точный PNG каждого объекта перед визуализацией.")
-    # Limit the encoded input before the common decoder allocates its bytes.
-    value = artwork.get("data_url")
-    if isinstance(value, str) and len(value) > ((MAX_OBJECT_ARTWORK_BYTES + 2) // 3) * 4 + 22:
-        raise products.ProductError("PNG объекта слишком большой: максимум 1 МиБ.")
-    if isinstance(value, str) and value.startswith("data:image/png;base64,"):
-        encoded = value[22:]
-        padding = 2 if encoded.endswith("==") else 1 if encoded.endswith("=") else 0
-        if len(encoded) % 4 == 0 and len(encoded) // 4 * 3 - padding > MAX_OBJECT_ARTWORK_BYTES:
-            raise products.ProductError("PNG объекта слишком большой: максимум 1 МиБ.")
-    image, raw = products.decode_artwork(artwork)
-    if len(raw) > MAX_OBJECT_ARTWORK_BYTES:
-        raise products.ProductError("PNG объекта слишком большой: максимум 1 МиБ.")
+    # Uploaded logos retain their exact bytes; only generated text has a per-image cap.
+    # The shared project/request budget and PNG validity checks still apply.
+    image, raw = (products.decode_logo_artwork(artwork) if obj["type"] == "logo"
+                  else products.decode_artwork(artwork, max_bytes=MAX_OBJECT_ARTWORK_BYTES))
     expected_source = "uploaded" if obj["type"] == "logo" else "text"
     if artwork["source"] != expected_source:
         raise products.ProductError("Логотип требует загруженный оригинал, текст — точный PNG из редактора.")
@@ -155,7 +147,7 @@ def validate_objects(params, require_artwork=False):
     except (TypeError, ValueError, OverflowError, RecursionError) as exc:
         raise products.ProductError("Параметры композиции должны быть корректным JSON.") from exc
     if serialized_size > MAX_OBJECTS_JSON_BYTES:
-        raise products.ProductError("Проект композиции слишком большой: максимум 4 МиБ.")
+        raise products.ProductError("Проект композиции слишком большой: максимум 30 МиБ.")
     ids = set()
     for obj in objects:
         if not isinstance(obj, dict):
@@ -229,7 +221,7 @@ def _object_scale(layout):
     return float(min(horizontal, vertical))
 
 
-def compose_objects(base, mask, project, report):
+def compose_objects(base, mask, project, report, *, surface_mask_path=None):
     """Project exact per-object PNGs, in object order, into a protected photo.
 
     Returns (RGB result, audit). The edit mask is the final pixel guard; its
@@ -241,6 +233,7 @@ def compose_objects(base, mask, project, report):
     if base.mode != "RGB" or mask.size != base.size or mask.mode != "L":
         raise products.ProductError("Основа должна быть RGB, а маска — L того же размера.")
     layer = Image.new("RGBA", base.size)
+    surface = Image.new("L", base.size) if surface_mask_path else None
     details = []
     night = project.get("generation", {}).get("lighting") == "night"
     for obj, layout in zip(objects, layouts):
@@ -250,6 +243,8 @@ def compose_objects(base, mask, project, report):
                                local_size=(layout["width_cm"], layout["height_cm"]),
                                boundary=layout.get("boundary_px"))
         alpha = warped.getchannel("A")
+        if surface is not None:
+            surface = ImageChops.lighter(surface, alpha)
         depth = obj.get("depth_cm", 0)
         offset = min(12, max(0, round(depth * _object_scale(layout))))
         if depth > 0:
@@ -263,6 +258,8 @@ def compose_objects(base, mask, project, report):
             for step in range(offset - 1, 0, -1):
                 side = ImageChops.lighter(side, products.shift_alpha(alpha, step, step))
             layer = Image.alpha_composite(layer, products.solid_layer(base.size, obj.get("side_color", "#292f30"), side))
+            if surface is not None:
+                surface = ImageChops.lighter(surface, side)
         if night:
             radius = min(10., max(1., _object_scale(layout) * .8))
             halo = warped.convert("RGBa").filter(ImageFilter.GaussianBlur(radius)).convert("RGBA")
@@ -278,6 +275,8 @@ def compose_objects(base, mask, project, report):
                         "night_illumination_on": night})
     alpha = np.asarray(layer.getchannel("A"))
     allowed = np.asarray(mask) > 0
+    if surface is not None:
+        Image.fromarray(np.where(allowed, np.asarray(surface), 0).astype("uint8")).save(surface_mask_path)
     clipped = int(np.count_nonzero((alpha > 0) & ~allowed))
     if clipped:
         layer.putalpha(Image.fromarray(np.where(allowed, alpha, 0).astype("uint8")))

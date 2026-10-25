@@ -6,6 +6,16 @@ const vm = require('node:vm');
 const Products = require('../assets/products.js');
 const G = require('../assets/geometry.js');
 const clone = value => JSON.parse(JSON.stringify(value));
+const copyInput=JSON.parse('{"__proto__":{"safe":true},"nested":{"rows":[{"x":1}]},"photo":"data:image/png;base64,unchanged"}');
+copyInput.optional=undefined;copyInput.numbers=[NaN,Infinity,-0,undefined];
+const copyOutput=Products.copyData(copyInput);
+assert.deepEqual(copyOutput,clone(copyInput));
+copyOutput.nested.rows[0].x=99;
+assert.equal(copyInput.nested.rows[0].x,1,'Copies must not alias mutable project containers');
+assert.equal(copyOutput.photo,copyInput.photo,'Immutable image strings remain unchanged');
+assert.ok(Object.hasOwn(copyOutput,'__proto__'));
+assert.equal(Object.getPrototypeOf(copyOutput),Object.prototype,'Untrusted metadata cannot change prototypes');
+const cyclic={};cyclic.self=cyclic;assert.throws(()=>Products.copyData(cyclic),/Circular/);
 const image = {name:'product-fixture.png',width_px:1600,height_px:1000};
 const calibration = {mode:'frontoparallel',frontoparallel_assumed:true,image_points:[[100,100],[500,100]],length_cm:100};
 const legacy = {version:1,image,calibration,sign:{text:'СТАРЫЙ МАКЕТ',depth_cm:7,front_color:'#eeeeee',custom_sign:{origin:'CDR'}},
@@ -84,6 +94,12 @@ assert.throws(()=>Products.validateProduct(blank,{requireContent:true}),/тек�
 const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aMfoAAAAASUVORK5CYII=';
 const artwork={name:'original.png',mime_type:'image/png',data_url:'data:image/png;base64,'+png,width_px:1,height_px:1,source:'uploaded'};
 assert.equal(Products.artworkInfo(artwork).size_bytes,Buffer.from(png,'base64').length);
+// Warming the PNG-header cache may never bypass changed metadata or policy.
+Products.logoArtworkInfo(artwork);
+assert.throws(()=>Products.artworkInfo(artwork,{maxBytes:1}),/2 МиБ/);
+assert.throws(()=>Products.artworkInfo(artwork,{maxEdge:0}),/Ширина/);
+assert.throws(()=>Products.artworkInfo(artwork,{maxPixels:0}),/Размеры/);
+assert.throws(()=>Products.logoArtworkInfo({...artwork,width_px:2}),/Размеры/);
 Products.validateProduct({...blank,artwork},{requireContent:true});
 for (const change of [{mime_type:'image/svg+xml'},{data_url:'javascript:alert(1)'},{data_url:'data:image/svg+xml;base64,'+png},{width_px:2},{height_px:0},{source:'svg'},{data_url:'data:image/png;base64,broken'}]) {
   assert.throws(()=>Products.artworkInfo({...artwork,...change}));

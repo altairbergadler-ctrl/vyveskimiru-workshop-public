@@ -52,5 +52,3 @@ html[data-letter-objects=true] #globalTextField,html[data-letter-objects=true] #
 #letterComposition .letter-object-materials input[type=color]{min-height:36px;height:36px;padding:3px}
 
 html[data-independent-signs="true"] #compositionSizeFields,html[data-independent-signs="true"] #compositionRotationField,html[data-independent-signs="true"] #interfaceSizeHint,html[data-independent-signs="true"] #place,html[data-independent-signs="true"] #placementHint{display:none!important}
-#independentPlacementHint{display:none}
-html[data-independent-signs="true"] #independentPlacementHint{display:block}

@@ -75,7 +75,68 @@ export function parseChats(value, account) {
     hasMore: more(value, value.chats.length),
   };
 }
-export function parseMessages(value) {
+// Media is opt-in: analytics keeps its existing text-only, bounded storage contract.
+export function avitoMessageMedia(row) {
+  if (row.type === 'image') {
+    const sizes = row.content?.image?.sizes;
+    const variants =
+      sizes && typeof sizes === 'object' && !Array.isArray(sizes)
+        ? Object.entries(sizes)
+            .slice(0, 30)
+            .filter(
+              ([k, v]) =>
+                /^\d{1,5}x\d{1,5}$/.test(k) &&
+                typeof v === 'string' &&
+                v.length <= 8192,
+            )
+            .map(([k, url]) => ({
+              area: k
+                .split('x')
+                .map(Number)
+                .reduce((a, b) => a * b),
+              url,
+            }))
+            .sort((a, b) => a.area - b.area)
+        : [];
+    return [
+      {
+        partId: '1',
+        kind: 'image',
+        name: 'Фото',
+        url: variants.at(-1)?.url || '',
+        preview:
+          variants.find((v) => v.area >= 140 * 105)?.url ||
+          variants[0]?.url ||
+          '',
+      },
+    ];
+  }
+  if (row.type === 'voice')
+    return [
+      {
+        partId: '1',
+        kind: 'audio',
+        name: 'Голосовое сообщение',
+        voiceId:
+          typeof row.content?.voice?.voice_id === 'string' &&
+          row.content.voice.voice_id.length <= 200
+            ? row.content.voice.voice_id
+            : '',
+      },
+    ];
+  if (row.type === 'file')
+    return [
+      {
+        partId: '1',
+        kind: 'file',
+        name: 'Файл',
+        unavailable:
+          'Авито не передаёт файл через это подключение. Откройте исходный чат.',
+      },
+    ];
+  return [];
+}
+export function parseMessages(value, { includeMedia = false } = {}) {
   const rows = Array.isArray(value) ? value : object(value).messages;
   if (!Array.isArray(rows) || rows.length > 100) fail();
   const seen = new Set();
@@ -91,6 +152,7 @@ export function parseMessages(value) {
       direction: row.direction,
       type: string(row.type, 40),
       text: row.type === 'text' ? string(row.content?.text, 32000) : '',
+      ...(includeMedia ? { media: avitoMessageMedia(row) } : {}),
     };
   });
   return { messages, hasMore: more(value, messages.length) };

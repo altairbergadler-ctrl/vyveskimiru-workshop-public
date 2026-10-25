@@ -1,4 +1,4 @@
-const CACHE = 'finance-vps-v67-tryon-tool';
+const CACHE = 'finance-vps-v68-sales-desk';
 const SHELL = [
   '/',
   '/manifest.webmanifest?v=4',
@@ -25,7 +25,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin === self.location.origin &&
-      ['/kanban', '/crm', '/production', '/signs', '/tools/stamp', '/calculator', '/fonts'].some(path => url.pathname === path || url.pathname.startsWith(path + '/'))) return;
+      ['/kanban', '/crm', '/production', '/signs', '/tools/stamp', '/calculator', '/fonts', '/sales'].some(path => url.pathname === path || url.pathname.startsWith(path + '/'))) return;
   if (event.request.url.includes('/api/')) {
     event.respondWith(fetch(event.request));
     return;

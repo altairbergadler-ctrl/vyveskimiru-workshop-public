@@ -398,16 +398,46 @@ export class AvitoClient {
     },'messenger');
   }
   async conversationMessages(input) {
-    inputObject(input,['chatId','offset']);
+    inputObject(input,['chatId','offset','includeMedia']);
+    if(input.includeMedia!==undefined && typeof input.includeMedia!=='boolean')throw new AvitoError('invalid',400);
     const offset=input.offset??0;
     if(!Number.isSafeInteger(offset)||offset<0||offset>900||offset%100)throw new AvitoError('invalid',400);
     let key;try{key=chatId(input.chatId);}catch{throw new AvitoError('invalid',400);}
     return this.#operation(async()=>{
       if(!this.#account)await this.#identify();
       const token=await this.#accessToken();
+      const observedAt=new Date().toISOString();
       const value=await this.#request('messenger_messages','/messenger/v3/accounts/'+this.#account+'/chats/'+encodeURIComponent(key)+'/messages/?limit=100&offset='+offset,{token,interval:1000});
-      try{return parseMessages(value);}catch{throw new AvitoError('schema',502);}
+      let page;try{page=parseMessages(value,{includeMedia:input.includeMedia===true});}catch{throw new AvitoError('schema',502);}
+      try { this.observeMessages?.({accountId:this.#account,chatId:key,page,observedAt}); } catch { console.error(JSON.stringify({event:'sales_observer_failed',source:'avito'})); }
+      return page;
     },'messenger');
+  }
+
+  async voiceFile(input) {
+    inputObject(input, ['voiceId']);
+    let id; try { id = chatId(input.voiceId); } catch { throw new AvitoError('invalid', 400); }
+    if(!this.#account)await this.#identify();
+    const account = this.#account, token = await this.#accessToken();
+    const value = await this.#request('messenger_voice', '/messenger/v1/accounts/' + account + '/getVoiceFiles?voice_ids=' + encodeURIComponent(id), { token, interval: 1000 });
+    const url = value?.voices_urls?.[id];
+    if (typeof url !== 'string' || !url.startsWith('https://') || url.length > 8192) throw new AvitoError('schema', 502);
+    return { accountId: account, url };
+  }
+
+  async sendChatMessage(input) {
+    inputObject(input,['chatId','text','accountId']);
+    let key;try{key=chatId(input.chatId);}catch{throw new AvitoError('invalid',400);}
+    if(typeof input.text!=='string'||!input.text.trim()||input.text.length>1000||input.text.includes('\0'))throw new AvitoError('invalid',400);
+    return this.#operation(async()=>{
+      if(!this.#account)await this.#identify();
+      if(String(input.accountId)!==this.#account)throw new AvitoError('account_mismatch',409);
+      const token=await this.#accessToken();
+      // User-triggered text send; this shared transport makes no automatic retries.
+      const value=await this.#request('messenger_send','/messenger/v1/accounts/'+this.#account+'/chats/'+encodeURIComponent(key)+'/messages',{method:'POST',token,interval:1000,payload:{type:'text',message:{text:input.text}}});
+      let id;try{id=chatId(value.id);}catch{throw new AvitoError('schema',502);}
+      return {id};
+    },'messenger_send');
   }
 
   close() { this.#closed = true; for (const controller of this.#controllers) controller.abort(); this.#token = null; this.#credentials = null; }

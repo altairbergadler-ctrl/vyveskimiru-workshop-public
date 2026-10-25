@@ -8,7 +8,25 @@
   'use strict';
   const fail = message => { throw new Error(message); };
   const object = value => !!value && typeof value === 'object' && !Array.isArray(value);
-  const copy = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+  // Project data is JSON, but copying it need not repeatedly encode/decode the
+  // multi-megabyte immutable PNG/photo strings. Nested containers stay isolated.
+  function copy(value, ancestors = new Set()) {
+    if (value === null || typeof value !== 'object') {
+      if (typeof value === 'bigint') throw new TypeError('BigInt is not JSON data');
+      if (typeof value === 'number') return Number.isFinite(value) ? (value === 0 ? 0 : value) : null;
+      return ['undefined','function','symbol'].includes(typeof value) ? undefined : value;
+    }
+    if (typeof value.toJSON === 'function') return copy(value.toJSON(), ancestors);
+    if (ancestors.has(value)) throw new TypeError('Circular project data');
+    ancestors.add(value);
+    try {
+      return Array.isArray(value) ? Array.from(value, item => copy(item, ancestors) ?? null) :
+        Object.fromEntries(Object.entries(value).map(([key,item]) => [key,copy(item, ancestors)]).filter(([,item]) => item !== undefined));
+    } finally { ancestors.delete(value); }
+  }
+  const pngHeaders = new Map();
+  let pngHeaderCharacters = 0;
+  const maxPngHeaderCharacters = 48 * 1024 * 1024;
   function freeze(value) {
     if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value); }
     return value;
@@ -155,31 +173,45 @@
     const normalized = normalizeProject(project), product = normalized.products[0];
     return {...normalized, version:1, sign:copy(product.params), placement:copy(product.placement)};
   }
-  function artworkInfo(artwork) {
+  function artworkInfo(artwork,{maxBytes=2*1024*1024,maxEdge=4096,maxPixels=16000000}={}) {
     if (!object(artwork)) fail('Оригинал макета должен быть объектом.');
     if (artwork.mime_type !== 'image/png') fail('Точный оригинал макета должен быть PNG.');
     if (typeof artwork.name !== 'string' || artwork.name.length > 240) fail('Некорректное имя оригинала макета.');
     choice(artwork.source, ['uploaded','text'], 'Источник оригинала');
     const prefix = 'data:image/png;base64,', url = artwork.data_url;
     if (typeof url !== 'string' || !url.startsWith(prefix)) fail('Оригинал макета должен содержать PNG data URL.');
-    const encoded = url.slice(prefix.length);
-    if (encoded.length > 2796204 || encoded.length % 4 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) fail('Некорректный PNG или превышен лимит оригинала 2 МиБ.');
-    const decoded = encoded.length / 4 * 3 - (encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0);
-    if (decoded < 45 || decoded > 2 * 1024 * 1024) fail('Некорректный PNG или превышен лимит оригинала 2 МиБ.');
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', bytes = [];
-    // Decode only the PNG header here. Pillow verifies the complete image on
-    // submission; no browser-only dependency is needed for project migration.
-    for (let offset = 0; offset < 44; offset += 4) {
-      const a=alphabet.indexOf(encoded[offset]), b=alphabet.indexOf(encoded[offset+1]), c=alphabet.indexOf(encoded[offset+2]), d=alphabet.indexOf(encoded[offset+3]);
-      bytes.push((a<<2)|(b>>4),((b&15)<<4)|(c>>2),((c&3)<<6)|d);
+    const decoded = (url.length-prefix.length) / 4 * 3 - (url.endsWith('==') ? 2 : url.endsWith('=') ? 1 : 0);
+    if (maxBytes!==null && decoded>maxBytes) fail('Превышен лимит оригинала 2 МиБ.');
+    let header = pngHeaders.get(url);
+    if (!header) {
+      const encoded = url.slice(prefix.length);
+      // A flat expression avoids a regexp stack overflow for large PNG originals.
+      if (decoded<45 || encoded.length%4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) fail('Некорректный PNG.');
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', bytes = [];
+      // Decode only the PNG header here. Pillow verifies the complete image on
+      // submission; no browser-only dependency is needed for project migration.
+      for (let offset = 0; offset < 44; offset += 4) {
+        const a=alphabet.indexOf(encoded[offset]), b=alphabet.indexOf(encoded[offset+1]), c=alphabet.indexOf(encoded[offset+2]), d=alphabet.indexOf(encoded[offset+3]);
+        bytes.push((a<<2)|(b>>4),((b&15)<<4)|(c>>2),((c&3)<<6)|d);
+      }
+      if (![137,80,78,71,13,10,26,10].every((value,i)=>bytes[i] === value) || ![0,0,0,13,73,72,68,82].every((value,i)=>bytes[i+8] === value)) fail('Оригинал макета не является PNG.');
+      const integer = at => bytes.slice(at,at+4).reduce((value,byte)=>value*256+byte,0);
+      header = {width:integer(16),height:integer(20),decoded};
+      if (url.length <= maxPngHeaderCharacters) {
+        while (pngHeaders.size && (pngHeaders.size >= 24 || pngHeaderCharacters + url.length > maxPngHeaderCharacters)) {
+          const oldest = pngHeaders.keys().next().value;
+          pngHeaderCharacters -= oldest.length; pngHeaders.delete(oldest);
+        }
+        pngHeaders.set(url,header); pngHeaderCharacters += url.length;
+      }
     }
-    if (![137,80,78,71,13,10,26,10].every((value,i)=>bytes[i] === value) || ![0,0,0,13,73,72,68,82].every((value,i)=>bytes[i+8] === value)) fail('Оригинал макета не является PNG.');
-    const integer = at => bytes.slice(at,at+4).reduce((value,byte)=>value*256+byte,0);
-    const width = integer(16), height = integer(20);
-    numeric(width,1,4096,'Ширина оригинала'); numeric(height,1,4096,'Высота оригинала');
-    if (width*height > 16000000 || artwork.width_px !== width || artwork.height_px !== height) fail('Размеры оригинала не соответствуют PNG или слишком велики.');
+    const {width,height} = header;
+    // Metadata and the caller's policy are checked even for a cached PNG.
+    numeric(width,1,maxEdge??Infinity,'Ширина оригинала'); numeric(height,1,maxEdge??Infinity,'Высота оригинала');
+    if ((maxPixels!==null && width*height>maxPixels) || artwork.width_px !== width || artwork.height_px !== height) fail('Размеры оригинала не соответствуют PNG или слишком велики.');
     return {width_px:width,height_px:height,size_bytes:decoded};
   }
+  function logoArtworkInfo(artwork){return artworkInfo(artwork,{maxBytes:null,maxEdge:null,maxPixels:null});}
   function validateField(field,value) {
     if(field.kind==='number')numeric(value,field.min,field.max,field.label);
     else if(field.kind==='color')color(value,field.label);
@@ -247,5 +279,5 @@
     return Math.ceil(Math.min(12,Math.max(2,(kind==='plaque'?params.thickness_mm:0)/10*scale))+5);
   }
   for(const template of catalogue)validateProduct(createProduct(template.type,template.id));
-  return {normalizeProject,activeProduct,legacyProject,descriptor,list,templates,catalogue:catalogueList,family,renderer,parameterFields,displayLabel,effectPadding,createProduct,validateProduct,summary,capabilities,artworkInfo,createRegistry:buildRegistry,catalogRevision:data.revision};
+  return {copyData:copy,normalizeProject,activeProduct,legacyProject,descriptor,list,templates,catalogue:catalogueList,family,renderer,parameterFields,displayLabel,effectPadding,createProduct,validateProduct,summary,capabilities,artworkInfo,logoArtworkInfo,createRegistry:buildRegistry,catalogRevision:data.revision};
 });

@@ -86,9 +86,12 @@ class CapturedGenerationInputs(unittest.TestCase):
         captures = []
         def render(folder, prompt, canvas, guide, *, reference_image_paths=None, transparent_background=False, **kwargs):
             references = list(reference_image_paths or [])
-            captures.append({"prompt": prompt, "references": references, "transparent": transparent_background})
+            captures.append({"prompt": prompt, "references": references, "transparent": transparent_background,
+                             "preserve_placed_artwork": kwargs.get("preserve_placed_artwork", False)})
             self.assertTrue(all(path.parent == folder and path.is_file() for path in references))
-            with Image.open(canvas) as image:
+            # Deliberately omit the new fronts from the fake model output. The
+            # final compositor must never put them or the diagnostic grid back.
+            with Image.open(references[1] if kwargs.get("preserve_placed_artwork") else canvas) as image:
                 return image.convert("RGBA" if transparent_background else "RGB")
         service = app.Service(temporary.name, renderer=render, status_reader=lambda: {"configured": True})
         service.submit(body)
@@ -97,7 +100,7 @@ class CapturedGenerationInputs(unittest.TestCase):
         self.assertEqual(job["status"], "complete", job)
         return captures, job, service
 
-    def test_two_stage_receives_fifth_grid_reference_without_final_overlay(self):
+    def test_scene_installation_receives_calibrated_grid_without_a_final_overlay(self):
         body = facade_payload(objects=True)
         body["project"]["generation"]["engine"] = "codex_two_stage"
         original = copy.deepcopy(body)
@@ -105,15 +108,17 @@ class CapturedGenerationInputs(unittest.TestCase):
         self.assertEqual(body, original)
         self.assertEqual(len(captures), 2)
         self.assertEqual([path.name for path in captures[1]["references"]],
-                         ["render-input.png", "layout-guide.png", "product-neutral.png", "product-guide.png", "facade-grid.png"])
-        self.assertIn("Reference 5 is ONLY", captures[1]["prompt"])
-        self.assertIn("do not straighten", captures[1]["prompt"])
-        self.assertIn("NO flat front-artwork overlay", captures[1]["prompt"])
+                         ["render-input.png", "scene-reference.png", "product-neutral.png", "product-guide.png", "facade-grid.png"])
+        self.assertTrue(captures[1]["preserve_placed_artwork"])
+        self.assertIn("Reference 5", captures[1]["prompt"])
+        self.assertIn("Discard stage 1 studio lighting", captures[1]["prompt"])
         spec = json.loads(captures[1]["prompt"].rsplit("\n", 1)[-1])
         expected = grid.geometry_cues(app.prepare(body)[2])
         self.assertEqual(spec["facade_geometry"], expected)
         self.assertTrue(job["audit"]["facade_grid_reference"]["reference_only"])
         self.assertTrue(job["audit"]["no_artwork_overlay_after_generation"])
+        self.assertFalse(job["audit"]["exact_front_geometry"])
+        self.assertTrue(job["audit"]["geometry_requires_visual_review"])
         self.assertFalse(job["audit"]["exact_artwork"])
         self.assertTrue(service.artifact(job["id"], "facade-grid.png").is_file())
         with tempfile.TemporaryDirectory() as transfer:
@@ -134,13 +139,13 @@ class CapturedGenerationInputs(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join()
-        # The edit target remains a clean photo. The fifth image alone contains
-        # diagnostic grid graphics; a fake renderer returning its input cannot
-        # leak those graphics into the final image.
+        # The target contains the new fronts, while the fifth image alone
+        # contains diagnostic grid graphics. Neither is overlaid after the AI.
         with Image.open(captures[1]["references"][0]) as target, Image.open(captures[1]["references"][4]) as guide:
             self.assertTrue(np.any(np.asarray(target) != np.asarray(guide)))
         with Image.open(service.artifact(job["id"], "render.png")) as result, Image.open(service.artifact(job["id"], "source.png")) as source:
-            self.assertTrue(np.array_equal(np.asarray(result), np.asarray(source)))
+            self.assertTrue(np.array_equal(np.asarray(result), np.asarray(source)),
+                            "The injected model omitted the fronts; neither fronts nor grid may be pasted back")
 
     def test_legacy_codex_receives_fourth_grid_reference_and_working_model(self):
         body, scene = payload("original"), facade_payload()
